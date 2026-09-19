@@ -1,0 +1,25 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 3,
+  "phase_name": "Connectors y catálogo externo",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "connectors": [
+    "PostgreSQL",
+    "Microsoft SQL Server"
+  ],
+  "features": [
+    "BaseConnector contract",
+    "Connector registry",
+    "PostgreSQL introspection",
+    "SQL Server introspection",
+    "Connection test",
+    "Catalog preview",
+    "Catalog synchronization",
+    "TableAsset / FieldAsset / RelationAsset",
+    "Logical type normalization",
+    "Safe paginated reads",
+    "Runtime credentials without password persistence"
+  ],
+  "docker": false
+}

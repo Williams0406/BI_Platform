@@ -1,0 +1,38 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 9,
+  "phase_name": "Optimization Engine",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "dependencies": {
+    "ortools": ">=9.15.6755,<9.16",
+    "pyomo": ">=6.10.1,<6.11",
+    "PuLP": ">=3.3.2,<3.4"
+  },
+  "features": [
+    "OptimizationModel",
+    "OptimizationParameter",
+    "OptimizationVariable",
+    "OptimizationObjective",
+    "OptimizationConstraint",
+    "SolverConfig",
+    "OptimizationScenario",
+    "OptimizationRun",
+    "OptimizationSolutionAsset",
+    "LP/MILP",
+    "OR-Tools adapter",
+    "PuLP CBC adapter",
+    "Pyomo adapter",
+    "scenario parameter overrides",
+    "managed-table parameter bindings",
+    "CSV artifact parameter bindings",
+    "ML prediction to optimization integration",
+    "baseline feasibility",
+    "baseline vs optimized improvement",
+    "best bound and gap",
+    "optimization Celery queue",
+    "solution as DataAsset",
+    "Dependency DAG integration"
+  ],
+  "docker": false
+}

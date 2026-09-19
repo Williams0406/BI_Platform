@@ -1,0 +1,38 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 7,
+  "phase_name": "Semantic Layer, Metrics y Analytics",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "features": [
+    "SemanticModel",
+    "SemanticDimension",
+    "MetricDefinition",
+    "Metric DataAsset registration",
+    "Simple metric aggregations",
+    "Controlled SQL metric expressions",
+    "Metric query engine",
+    "Runtime filters",
+    "Dimension grouping",
+    "Metric cache TTL",
+    "ChartDefinition",
+    "DashboardDefinition",
+    "DashboardItem",
+    "Global filters",
+    "Chart dataset API",
+    "Dashboard dataset API",
+    "Drill-down",
+    "ReportDefinition"
+  ],
+  "chart_types": [
+    "KPI",
+    "TABLE",
+    "BAR",
+    "LINE",
+    "AREA",
+    "PIE",
+    "DONUT",
+    "SCATTER"
+  ],
+  "docker": false
+}

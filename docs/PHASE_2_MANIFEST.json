@@ -1,0 +1,20 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 2,
+  "phase_name": "Organizaciones, Workspaces y Data Assets",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "features": [
+    "Custom User login by email",
+    "JWT authentication",
+    "Organization",
+    "Membership roles",
+    "Workspace",
+    "DataSource abstraction",
+    "DataAsset registry",
+    "MANAGED / EXTERNAL / PRIVATE_GATEWAY modes",
+    "READ / WRITE / DDL capabilities",
+    "REST APIs and basic permissions"
+  ],
+  "docker": false
+}

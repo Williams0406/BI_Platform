@@ -1,0 +1,40 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 12,
+  "phase_name": "Escalabilidad y producción",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "dependencies": {
+    "gunicorn": ">=26.2.0,<27.0",
+    "uvicorn": ">=0.52.4,<0.53",
+    "django-redis": ">=7.0.0,<8.0",
+    "boto3": ">=1.43.82,<1.44",
+    "pyarrow": ">=25.0.1,<26.0"
+  },
+  "features": [
+    "Redis Django cache",
+    "PgBouncer deployment mode",
+    "Local/S3 artifact abstraction",
+    "Parquet analytical artifacts",
+    "ML model materialization from object storage",
+    "WorkspacePlacement",
+    "OperationalMetricSnapshot",
+    "maintenance Celery queue",
+    "Celery Beat maintenance",
+    "retention execution",
+    "stale execution recovery",
+    "DB diagnostics command",
+    "request correlation ID",
+    "expanded readiness",
+    "Gunicorn production config",
+    "Nginx reverse proxy",
+    "systemd worker isolation",
+    "Supervisor alternative",
+    "PostgreSQL backup/restore scripts",
+    "release script",
+    "production runbook",
+    "backup recovery runbook",
+    "governance/customer_gateway cumulative app registration fix"
+  ],
+  "docker": false
+}

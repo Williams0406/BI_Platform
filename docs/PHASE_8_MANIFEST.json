@@ -1,0 +1,38 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 8,
+  "phase_name": "Python & Data Science",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "dependencies": {
+    "pandas": ">=3.0.5,<3.1",
+    "scikit-learn": ">=1.9.0,<2.0",
+    "joblib": ">=1.5.3,<1.6"
+  },
+  "features": [
+    "PythonTransformation",
+    "PythonTransformationInput",
+    "subprocess Python runtime",
+    "python queue",
+    "import whitelist",
+    "timeout/row limits",
+    "Unix memory limits",
+    "Python outputs as DataAsset",
+    "DatasetDefinition",
+    "ModelDefinition",
+    "features/target",
+    "classification/regression",
+    "sklearn Pipeline",
+    "ModelRun",
+    "ModelVersion",
+    "joblib artifacts",
+    "evaluation metrics",
+    "input asset version snapshot",
+    "ml queue",
+    "batch inference",
+    "PredictionAsset",
+    "predictions as DataAsset",
+    "Dependency DAG integration"
+  ],
+  "docker": false
+}

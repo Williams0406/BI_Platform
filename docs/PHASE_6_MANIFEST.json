@@ -1,0 +1,30 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 6,
+  "phase_name": "Transformations, Dependencies y Execution",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "features": [
+    "Celery application",
+    "Redis broker/result backend configuration",
+    "Execution lifecycle and logs",
+    "Execution cancellation request",
+    "SQL transformations",
+    "SELECT/WITH validation",
+    "DataAsset UUID token resolution",
+    "VIEW and TABLE outputs",
+    "Transformation output catalog synchronization",
+    "AssetDependency DAG",
+    "Cycle detection",
+    "AssetState FRESH/STALE/RUNNING/FAILED/BLOCKED/ARCHIVED",
+    "ChangeEvent",
+    "Lineage API",
+    "Record write change events after transaction commit",
+    "Celery propagation task"
+  ],
+  "queues": [
+    "fast",
+    "sql"
+  ],
+  "docker": false
+}

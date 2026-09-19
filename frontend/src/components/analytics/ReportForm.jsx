@@ -1,0 +1,10 @@
+"use client";
+import { useEffect,useState } from "react";
+import Alert from "@/components/ui/Alert";
+function text(v,f){try{return JSON.stringify(v??f,null,2);}catch{return JSON.stringify(f,null,2);}}
+export default function ReportForm({workspaceId,dashboards=[],initialValue,onSubmit,onCancel,isSaving}){
+ const [name,setName]=useState("");const [description,setDescription]=useState("");const [dashboard,setDashboard]=useState("");const [format,setFormat]=useState("PDF");const [config,setConfig]=useState("{}");const [error,setError]=useState("");
+ useEffect(()=>{setName(initialValue?.name||"");setDescription(initialValue?.description||"");setDashboard(initialValue?.dashboard||"");setFormat(initialValue?.default_export_format||"PDF");setConfig(text(initialValue?.config,{}));setError("");},[initialValue]);
+ function submit(e){e.preventDefault();setError("");try{onSubmit({workspace:workspaceId,name:name.trim(),description,dashboard:dashboard||null,config:JSON.parse(config||"{}"),default_export_format:format});}catch(err){setError(err.message||"JSON inválido.");}}
+ return <form className="formGrid" onSubmit={submit}>{error&&<Alert type="error">{error}</Alert>}<label>Nombre<input value={name} onChange={e=>setName(e.target.value)} required/></label><label>Formato<select value={format} onChange={e=>setFormat(e.target.value)}><option>PDF</option><option>XLSX</option><option>CSV</option></select></label><label className="span2">Dashboard<select value={dashboard} onChange={e=>setDashboard(e.target.value)}><option value="">Sin dashboard</option>{dashboards.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></label><label className="span2">Descripción<textarea rows="3" value={description} onChange={e=>setDescription(e.target.value)}/></label><label className="span2">Config JSON<textarea rows="6" value={config} onChange={e=>setConfig(e.target.value)}/></label><div className="formActions span2"><button type="button" className="button secondaryButton" onClick={onCancel}>Cancelar</button><button type="submit" className="button primaryButton" disabled={isSaving}>{isSaving?"Guardando...":"Guardar reporte"}</button></div></form>;
+}

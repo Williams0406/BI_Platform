@@ -1,0 +1,20 @@
+"use client";
+import {useEffect,useMemo,useState} from "react";
+const AGGS=["SUM","AVG","MIN","MAX","COUNT"];
+function jsonScalar(v,type){if(v==="")return null;if(type==="BOOLEAN")return v==="true";return type==="INTEGER"?Number.parseInt(v,10):Number(v);}
+export default function ParameterForm({modelId,assets,tables,initialValue,onSubmit,onCancel,isSaving}){
+ const [f,setF]=useState({name:"",value_type:"NUMBER",default_value:"",source_asset:"",source_field:"",source_column:"",source_aggregation:"SUM",description:""});
+ useEffect(()=>setF({name:initialValue?.name||"",value_type:initialValue?.value_type||"NUMBER",default_value:initialValue?.default_value??"",source_asset:initialValue?.source_asset||"",source_field:initialValue?.source_field||"",source_column:initialValue?.source_column||"",source_aggregation:initialValue?.source_aggregation||"SUM",description:initialValue?.description||""}),[initialValue]);
+ const set=(k,v)=>setF(o=>({...o,[k]:v}));
+ const table=useMemo(()=>tables.find(t=>t.data_asset===f.source_asset),[tables,f.source_asset]);
+ const asset=assets.find(a=>a.id===f.source_asset); const isManagedTable=Boolean(table && asset?.data_source);
+ return <form className="formGrid" onSubmit={e=>{e.preventDefault();onSubmit({model:modelId,name:f.name,value_type:f.value_type,default_value:f.default_value===""?null:jsonScalar(f.default_value,f.value_type),source_asset:f.source_asset||null,source_field:f.source_field||null,source_column:f.source_column,source_aggregation:f.source_asset?f.source_aggregation:"",description:f.description});}}>
+  <label className="fieldGroup"><span>Nombre</span><input required value={f.name} onChange={e=>set("name",e.target.value)} placeholder="capacity"/></label>
+  <label className="fieldGroup"><span>Tipo</span><select value={f.value_type} onChange={e=>set("value_type",e.target.value)}><option>NUMBER</option><option>INTEGER</option><option>BOOLEAN</option></select></label>
+  <label className="fieldGroup"><span>Valor por defecto</span>{f.value_type==="BOOLEAN"?<select value={String(f.default_value)} onChange={e=>set("default_value",e.target.value)}><option value="">Sin valor</option><option value="true">true</option><option value="false">false</option></select>:<input type="number" step="any" value={f.default_value} onChange={e=>set("default_value",e.target.value)}/>}</label>
+  <label className="fieldGroup"><span>DataAsset fuente (opcional)</span><select value={f.source_asset} onChange={e=>{set("source_asset",e.target.value);set("source_field","");}}><option value="">Usar escenario/default</option>{assets.map(a=><option key={a.id} value={a.id}>{a.name} · {a.asset_type}</option>)}</select></label>
+  {f.source_asset&&<><label className="fieldGroup"><span>Agregación</span><select value={f.source_aggregation} onChange={e=>set("source_aggregation",e.target.value)}>{AGGS.map(x=><option key={x}>{x}</option>)}</select></label>{isManagedTable?<label className="fieldGroup"><span>Campo fuente</span><select required value={f.source_field} onChange={e=>set("source_field",e.target.value)}><option value="">Seleccionar</option>{(table.fields||[]).map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>:<label className="fieldGroup"><span>Columna artifact</span><input required value={f.source_column} onChange={e=>set("source_column",e.target.value)} placeholder="prediction"/></label>}</>}
+  <label className="fieldGroup fullWidth"><span>Descripción</span><textarea rows="2" value={f.description} onChange={e=>set("description",e.target.value)}/></label>
+  <div className="formActions fullWidth"><button type="button" className="button secondaryButton" onClick={onCancel}>Cancelar</button><button type="submit" className="button primaryButton" disabled={isSaving}>{isSaving?"Guardando...":"Guardar parámetro"}</button></div>
+ </form>;
+}

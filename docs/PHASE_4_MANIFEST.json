@@ -1,0 +1,29 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 4,
+  "phase_name": "Data Model Builder y Records",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "features": [
+    "Workspace-scoped PostgreSQL schemas",
+    "Managed DataSource auto-provisioning metadata",
+    "Safe DDL builder",
+    "Managed table creation",
+    "Logical type whitelist",
+    "Primary key support",
+    "Managed foreign keys",
+    "Table/field/relation catalog creation",
+    "Dynamic CRUD API",
+    "Filtering and ordering",
+    "Pagination",
+    "Record validation",
+    "Optimistic locking via __row_version",
+    "409 conflict detection"
+  ],
+  "limitations": [
+    "Single-column PK required for individual record endpoints",
+    "External datasource writeback remains pending",
+    "No encrypted secret store yet"
+  ],
+  "docker": false
+}

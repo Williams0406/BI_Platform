@@ -1,0 +1,11 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 1,
+  "phase_name": "Fundamentos de plataforma",
+  "status": "completed",
+  "backend": "Django + Django REST Framework",
+  "frontend_target": "Next.js",
+  "docker": false,
+  "control_plane_database": "PostgreSQL",
+  "python_files_validated": 33
+}

@@ -1,0 +1,10 @@
+"use client";
+import { useEffect, useState } from "react";
+import Alert from "@/components/ui/Alert";
+function text(value,fallback){try{return JSON.stringify(value??fallback,null,2);}catch{return JSON.stringify(fallback,null,2);}}
+export default function DashboardItemForm({dashboardId,charts=[],initialValue,onSubmit,onCancel,isSaving}){
+ const [chart,setChart]=useState("");const [title,setTitle]=useState("");const [position,setPosition]=useState('{\n  "x": 0,\n  "y": 0,\n  "w": 6,\n  "h": 4\n}');const [config,setConfig]=useState("{}");const [error,setError]=useState("");
+ useEffect(()=>{setChart(initialValue?.chart||charts[0]?.id||"");setTitle(initialValue?.title_override||"");setPosition(text(initialValue?.position,{x:0,y:0,w:6,h:4}));setConfig(text(initialValue?.config_override,{}));setError("");},[initialValue,charts]);
+ function submit(e){e.preventDefault();setError("");try{onSubmit({dashboard:dashboardId,chart,title_override:title,position:JSON.parse(position||"{}"),config_override:JSON.parse(config||"{}")});}catch(err){setError(err.message||"JSON inválido.");}}
+ return <form className="formGrid" onSubmit={submit}>{error&&<Alert type="error">{error}</Alert>}<label className="span2">Chart<select value={chart} onChange={e=>setChart(e.target.value)} required><option value="">Selecciona...</option>{charts.map(c=><option key={c.id} value={c.id}>{c.name} · {c.chart_type}</option>)}</select></label><label className="span2">Título override<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Opcional"/></label><label>Position JSON<textarea rows="6" value={position} onChange={e=>setPosition(e.target.value)}/></label><label>Config override JSON<textarea rows="6" value={config} onChange={e=>setConfig(e.target.value)}/></label><div className="formActions span2"><button type="button" className="button secondaryButton" onClick={onCancel}>Cancelar</button><button type="submit" className="button primaryButton" disabled={isSaving||!chart}>{isSaving?"Guardando...":"Guardar item"}</button></div></form>;
+}

@@ -1,0 +1,35 @@
+{
+  "project": "Business Intelligence Platform",
+  "phase": 10,
+  "phase_name": "Importación, Exportación y Governance",
+  "status": "completed",
+  "cumulative_from_phase": 1,
+  "dependencies": {
+    "openpyxl": ">=3.1.5,<3.2",
+    "defusedxml": ">=0.7.1,<0.8",
+    "cryptography": ">=50.0.1,<51.0"
+  },
+  "features": [
+    "CSV/XLSX import",
+    "column mapping",
+    "APPEND",
+    "UPSERT",
+    "bulk chunking",
+    "validation before write",
+    "async import jobs",
+    "CSV/XLSX exports",
+    "async export jobs",
+    "download endpoint",
+    "AuditLog",
+    "WorkspaceQuota",
+    "WorkspaceUsage",
+    "ResourcePermission",
+    "EncryptedSecret",
+    "connector encrypted credentials",
+    "DestructiveChangeRequest",
+    "managed table destructive approval",
+    "RetentionPolicy",
+    "imports Celery queue"
+  ],
+  "docker": false
+}

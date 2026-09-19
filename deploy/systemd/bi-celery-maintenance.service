@@ -1,0 +1,18 @@
+[Unit]
+After=network.target redis.service
+Requires=network.target
+
+[Service]
+Type=simple
+User=bi-platform
+Group=bi-platform
+WorkingDirectory=/opt/bi-platform/backend
+EnvironmentFile=/opt/bi-platform/backend/.env
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+ExecStart=/opt/bi-platform/venv/bin/celery -A config worker -l INFO -Q maintenance --concurrency=1
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

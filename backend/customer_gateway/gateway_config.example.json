@@ -1,0 +1,32 @@
+{
+  "platform_url": "https://bi.example.com",
+  "gateway_id": "",
+  "agent_token": "",
+  "poll_seconds": 3,
+  "heartbeat_seconds": 30,
+  "connections": {
+    "erp-sqlserver": {
+      "engine": "SQLSERVER",
+      "config": {
+        "server": "SERVIDOR\\SQLEXPRESS",
+        "database": "ERP",
+        "user": "bi_gateway",
+        "password": "${ERP_GATEWAY_PASSWORD}",
+        "driver": "ODBC Driver 18 for SQL Server",
+        "encrypt": true,
+        "trust_server_certificate": true
+      }
+    },
+    "warehouse-postgres": {
+      "engine": "POSTGRESQL",
+      "config": {
+        "host": "10.0.0.10",
+        "port": 5432,
+        "database": "warehouse",
+        "user": "bi_gateway",
+        "password": "${WAREHOUSE_GATEWAY_PASSWORD}",
+        "sslmode": "prefer"
+      }
+    }
+  }
+}
