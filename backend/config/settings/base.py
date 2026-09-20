@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import dj_database_url
+
 from .env import env, env_int, env_list
 
 
@@ -82,20 +84,23 @@ ASGI_APPLICATION = "config.asgi.application"
 # ------------------------------------------------------------
 # Control Plane Database
 # ------------------------------------------------------------
+# One canonical connection variable in every environment. Railway can set:
+# DATABASE_URL=${{Postgres.DATABASE_URL}}
+DATABASE_URL = env(
+    "DATABASE_URL",
+    "postgresql://postgres@127.0.0.1:5432/business_intelligence_control",
+)
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME", "business_intelligence_control"),
-        "USER": env("DB_USER", "postgres"),
-        "PASSWORD": env("DB_PASSWORD", ""),
-        "HOST": env("DB_HOST", "127.0.0.1"),
-        "PORT": env("DB_PORT", "5432"),
-        "CONN_MAX_AGE": env_int("DB_CONN_MAX_AGE", 60),
-        "OPTIONS": {
-            "connect_timeout": env_int("DB_CONNECT_TIMEOUT", 5),
-        },
-    }
+    "default": dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=env_int("DB_CONN_MAX_AGE", 60),
+        conn_health_checks=True,
+    )
 }
+DATABASES["default"].setdefault("OPTIONS", {})
+DATABASES["default"]["OPTIONS"].setdefault(
+    "connect_timeout", env_int("DB_CONNECT_TIMEOUT", 5)
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -230,8 +235,11 @@ SIMPLE_JWT = {
 # ------------------------------------------------------------
 # Celery / Redis
 # ------------------------------------------------------------
-CELERY_BROKER_URL = env("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
-CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/1")
+# REDIS_URL is the canonical Redis connection. Dedicated Celery URLs remain
+# optional overrides for future scaling without requiring code changes.
+REDIS_URL = env("REDIS_URL", "redis://127.0.0.1:6379/0")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", REDIS_URL)
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", REDIS_URL)
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
@@ -276,7 +284,7 @@ GATEWAY_MAX_RESULT_ROWS = env_int("GATEWAY_MAX_RESULT_ROWS", 1000)
 # ------------------------------------------------------------
 # Phase 12 — Scalability / cache / storage / observability
 # ------------------------------------------------------------
-CACHE_URL = env("CACHE_URL", "redis://127.0.0.1:6379/2")
+CACHE_URL = env("CACHE_URL", REDIS_URL)
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
