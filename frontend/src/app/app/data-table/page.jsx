@@ -1,4 +1,20 @@
 "use client";
-import {useSearchParams} from "next/navigation";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
 import DataTableWorkspace from "@/components/data/DataTableWorkspace";
-export default function DataTablePage(){const search=useSearchParams();return <DataTableWorkspace initialTableId={search.get("table")||""}/>}
+
+function DataTablePageContent() {
+  const search = useSearchParams();
+
+  return <DataTableWorkspace initialTableId={search.get("table") || ""} />;
+}
+
+export default function DataTablePage() {
+  return (
+    <Suspense fallback={null}>
+      <DataTablePageContent />
+    </Suspense>
+  );
+}
