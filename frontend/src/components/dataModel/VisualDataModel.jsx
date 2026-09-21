@@ -29,7 +29,8 @@ function autoLayout(tables) {
   );
 }
 
-function getNodeHeight(table) {
+function getNodeHeight(table, compact = false) {
+  if (compact) return HEADER_HEIGHT + 8;
   const visible = Math.min(table.fields?.length || 0, MAX_VISIBLE_FIELDS);
   return HEADER_HEIGHT + visible * FIELD_HEIGHT + ((table.fields?.length || 0) > MAX_VISIBLE_FIELDS ? 30 : 8);
 }
@@ -43,11 +44,9 @@ function relationPath(source, target, sourceHeight, targetHeight) {
   return `M ${sx} ${sy} C ${sx + delta} ${sy}, ${tx - delta} ${ty}, ${tx} ${ty}`;
 }
 
-export default function VisualDataModel({ workspaceId, tables, relations, sources, selectedId, onSelect, onRenameTable, onDeleteTable, onDeleteSource }) {
+export default function VisualDataModel({ workspaceId, tables, relations, sources, selectedId, onSelect, onRenameTable, onDeleteTable, onDeleteSource, compactRelationships = false, query = "", sourceFilter = "ALL" }) {
   const viewportRef = useRef(null);
   const dragRef = useRef(null);
-  const [query, setQuery] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("ALL");
   const [positions, setPositions] = useState(() => autoLayout(tables));
   const [zoom, setZoom] = useState(1);
   const [editingTable, setEditingTable] = useState(null);
@@ -90,15 +89,29 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
   const canvasSize = useMemo(() => {
     const nodes = visibleTables.map((table) => ({ table, pos: positions[table.id] || { x: 0, y: 0 } }));
     const maxX = nodes.reduce((acc, item) => Math.max(acc, item.pos.x + NODE_WIDTH + 120), 1000);
-    const maxY = nodes.reduce((acc, item) => Math.max(acc, item.pos.y + getNodeHeight(item.table) + 120), 680);
+    const maxY = nodes.reduce((acc, item) => Math.max(acc, item.pos.y + getNodeHeight(item.table, compactRelationships) + 120), 680);
     return { width: Math.max(1100, maxX), height: Math.max(680, maxY) };
-  }, [visibleTables, positions]);
+  }, [visibleTables, positions, compactRelationships]);
 
-  function resetLayout() {
-    setPositions(autoLayout(tables));
-    setZoom(1);
-    if (viewportRef.current) viewportRef.current.scrollTo({ left: 0, top: 0, behavior: "smooth" });
-  }
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
+    function onKeyDown(event) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (["+", "=", "-", "0"].includes(event.key)) event.preventDefault();
+      if (event.key === "+" || event.key === "=") setZoom((value) => Math.min(1.5, +(value + .1).toFixed(2)));
+      if (event.key === "-") setZoom((value) => Math.max(.55, +(value - .1).toFixed(2)));
+      if (event.key === "0") setZoom(1);
+    }
+    function onWheel(event) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+      setZoom((value) => Math.min(1.5, Math.max(.55, +(value + (event.deltaY < 0 ? .1 : -.1)).toFixed(2))));
+    }
+    viewport.addEventListener("keydown", onKeyDown);
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    return () => { viewport.removeEventListener("keydown", onKeyDown); viewport.removeEventListener("wheel", onWheel); };
+  }, []);
 
   function beginDrag(event, tableId) {
     if (event.button !== 0) return;
@@ -136,26 +149,9 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
 
   return (
     <section className="visualModelShell">
-      <div className="visualModelToolbar">
-        <label className="modelSearch">
-          <Icon name="search" size={15} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search tables or fields..." />
-        </label>
-        <select aria-label="Filter by source" value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-          <option value="ALL">All sources</option>
-          {sources.map((source) => <option value={source.id} key={source.id}>{source.name}</option>)}
-        </select>
-        <div className="modelToolbarSpacer" />
-        <span className="modelCanvasCount">{visibleTables.length} tables · {visibleRelations.length} relations</span>
-        <div className="modelZoomControls" aria-label="Zoom controls">
-          <button type="button" onClick={() => setZoom((value) => Math.max(.55, +(value - .1).toFixed(2)))} aria-label="Zoom out">−</button>
-          <button type="button" className="zoomValue" onClick={() => setZoom(1)}>{Math.round(zoom * 100)}%</button>
-          <button type="button" onClick={() => setZoom((value) => Math.min(1.5, +(value + .1).toFixed(2)))} aria-label="Zoom in">+</button>
-        </div>
-        <button className="button secondaryButton compactButton" type="button" onClick={resetLayout}>Auto layout</button>
-      </div>
 
-      <div className="visualModelViewport" ref={viewportRef}>
+
+      <div className="visualModelViewport" ref={viewportRef} tabIndex={0} title="Zoom: Ctrl/Cmd + mouse wheel, +, -, or 0">
         <div className="visualModelCanvas" style={{ width: canvasSize.width * zoom, height: canvasSize.height * zoom }}>
           <div className="visualModelScale" style={{ width: canvasSize.width, height: canvasSize.height, transform: `scale(${zoom})` }}>
             <svg className="modelRelationLayer" width={canvasSize.width} height={canvasSize.height} aria-hidden="true">
@@ -170,7 +166,7 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
                 const source = positions[relation.source_table];
                 const target = positions[relation.target_table];
                 if (!source || !target || !sourceTable || !targetTable) return null;
-                return <path key={relation.id} d={relationPath(source, target, getNodeHeight(sourceTable), getNodeHeight(targetTable))} className="modelRelationPath" markerEnd="url(#relationArrow)" />;
+                return <path key={relation.id} d={relationPath(source, target, getNodeHeight(sourceTable, compactRelationships), getNodeHeight(targetTable, compactRelationships))} className="modelRelationPath" markerEnd="url(#relationArrow)" />;
               })}
             </svg>
 
@@ -196,7 +192,7 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
                     </div>
                     <span className="modelNodeType">{table.object_type}</span>
                   </div>
-                  <div className="modelFieldList">
+                  {!compactRelationships && <div className="modelFieldList">
                     {fields.slice(0, MAX_VISIBLE_FIELDS).map((field) => (
                       <div className="modelFieldRow" key={field.id} title={`${field.name} · ${field.logical_type}`}>
                         <span className="modelFieldKey">{field.is_primary_key ? "PK" : field.is_identity ? "ID" : ""}</span>
@@ -206,7 +202,7 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
                     ))}
                     {fields.length === 0 && <div className="modelNodeEmpty">No fields cataloged</div>}
                     {fields.length > MAX_VISIBLE_FIELDS && <div className="modelMoreFields">+ {fields.length - MAX_VISIBLE_FIELDS} more fields</div>}
-                  </div>
+                  </div>}
                 </article>
               );
             })}
@@ -215,7 +211,6 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
           </div>
         </div>
       </div>
-      <p className="modelCanvasHint">Drag table headers to organize the canvas. Layout is saved locally for this workspace.</p>
     </section>
   );
 }

@@ -2917,3 +2917,141 @@ textarea{min-height:88px}
 .bulletChart{display:grid;gap:12px;padding:24px}.bulletChart>div{display:grid;grid-template-columns:120px 1fr 90px;align-items:center;gap:10px;font-size:11px}.bulletChart i{height:14px;background:rgba(127,127,127,.15);display:block}.bulletChart b{height:100%;display:block}
 .modelDataSample{margin:0;border-top:1px solid var(--border,#e5e9ef);background:var(--surface,#fff);max-height:230px;overflow:hidden}.modelDataSampleHeader{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid var(--border,#e5e9ef);font-size:11px}.modelDataSampleHeader span{opacity:.55}.modelSampleTable{overflow:auto;max-height:190px}.modelSampleTable table{width:100%;border-collapse:collapse;font-size:10px}.modelSampleTable th,.modelSampleTable td{padding:6px 9px;border-bottom:1px solid rgba(127,127,127,.1);text-align:left;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis}.erdMode .modelNode{border-radius:2px!important;box-shadow:none!important}.erdMode .modelRelationPath{stroke-width:1.7px}.modelMode .modelNode{border-radius:9px}
 @media(max-width:1200px){.tableauWorkspace.exploreWorkspace{grid-template-columns:48px minmax(420px,1fr) 260px 220px!important}.workspaceCodeRegion{width:calc(100% - 260px)}}
+
+/* UX: clean code blocks and compact ER relationship mode */
+.scriptsPage .workbenchCodeEditor,
+.scriptsPage .workbenchCodeEditor:focus,
+.workspaceCodeRegion .workbenchCodeEditor,
+.workspaceCodeRegion .workbenchCodeEditor:focus {
+  border-left: 0 !important;
+  border-inline-start: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.erdMode .modelNode { min-height: 56px; }
+.erdMode .modelNodeHeader { border-bottom: 0; }
+.erdMode .modelNodeType { opacity: .72; }
+
+/* UX V40 — Data canvas docks, command-bar filtering and keyboard zoom */
+.modelFilterCommand{position:relative;display:flex;align-items:center}
+.modelFilterPopover{position:absolute;right:0;top:38px;z-index:120;width:310px;padding:10px;border:1px solid var(--border,#e5e9ef);border-radius:9px;background:var(--surface,#fff);box-shadow:0 12px 32px rgba(18,22,28,.14);display:grid;gap:8px}
+.modelFilterPopover label{display:flex;align-items:center;gap:7px;height:36px;padding:0 9px;border:1px solid var(--border,#e5e9ef);border-radius:7px;color:var(--text-muted)}
+.modelFilterPopover input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--text);font-size:12px}
+.modelFilterPopover select{width:100%;min-height:36px;font-size:12px}
+.dashboardLikeModelWorkspace{display:grid!important;grid-template-columns:minmax(0,1fr) 310px!important;grid-template-rows:auto minmax(360px,1fr) auto!important;grid-template-areas:"code inspector" "canvas inspector" "sample inspector"!important;min-height:690px}
+.dashboardLikeModelWorkspace>.modelCanvasCodeDock{grid-area:code;min-width:0;border-bottom:1px solid var(--border,#e5e9ef);background:var(--surface,#fff)}
+.dashboardLikeModelWorkspace>.modelCanvasCodeDock .sharedScriptWorkbench{max-height:310px}
+.dashboardLikeModelWorkspace>.modelCanvasCodeDock .workbenchCodeEditor{min-height:150px;max-height:230px}
+.dashboardLikeModelWorkspace>.visualModelShell{grid-area:canvas;min-height:0!important;height:auto!important}
+.dashboardLikeModelWorkspace>.modelInspector{grid-area:inspector;height:100%!important;min-height:0;border-left:1px solid var(--border,#e5e9ef)}
+.dashboardLikeModelWorkspace>.modelDataSample{grid-area:sample;margin:0;min-width:0;border-top:1px solid var(--border,#e5e9ef);border-right:0;max-height:230px}
+.dashboardLikeModelWorkspace .visualModelViewport{min-height:360px!important;height:100%;outline:none}
+.dashboardLikeModelWorkspace .visualModelViewport:focus-visible{box-shadow:inset 0 0 0 1px rgba(65,93,120,.25)}
+.dashboardLikeModelWorkspace .visualModelToolbar,.dashboardLikeModelWorkspace .modelCanvasHint{display:none!important}
+.erdMode>.modelInspector{display:block!important}
+.erdMode>.modelDataSample{display:block!important}
+@media(max-width:1150px){.dashboardLikeModelWorkspace{grid-template-columns:minmax(0,1fr) 270px!important}}
+@media(max-width:900px){.dashboardLikeModelWorkspace{grid-template-columns:1fr!important;grid-template-rows:auto minmax(360px,1fr) auto auto!important;grid-template-areas:"code" "canvas" "sample" "inspector"!important}.dashboardLikeModelWorkspace>.modelInspector{display:block!important;max-height:420px;border-left:0;border-top:1px solid var(--border,#e5e9ef)}.modelFilterPopover{right:-80px;width:min(310px,80vw)}}
+
+/* UX v41 — Table / Analytics workspace alignment */
+.tableWorkspaceStandalone{gap:0!important;height:calc(100vh - var(--topbar-height,64px) - 28px);overflow:hidden}
+.tableWorkspaceStandalone>.workspaceCommandBar{flex:0 0 44px;border:1px solid var(--border);border-bottom:0;border-radius:10px 10px 0 0}
+.tableWorkspaceStandalone .dataWorkbenchGrid{height:calc(100% - 44px)!important;min-height:0!important;gap:0!important}
+.tableWorkspaceStandalone .dataWorkbenchMain{border-radius:0 0 0 10px!important;border-right:0!important;grid-template-rows:minmax(180px,38%) minmax(0,1fr)!important;overflow:hidden!important}
+.tableWorkspaceStandalone .dataWorkbenchMain.codeClosed{grid-template-rows:minmax(0,1fr)!important}
+.tableWorkspaceStandalone .dataSemanticPanel{border-radius:0 0 10px 0!important;margin:0!important}
+.tableWorkspaceStandalone .tableDataPane{height:100%;min-height:0}
+.tableWorkspaceStandalone .workbenchTableWrap{max-height:none!important;height:100%;min-height:0}
+.tableWorkspaceStandalone .sharedScriptWorkbench{height:100%;border-radius:0!important;border-left:0!important;border-right:0!important}
+
+.tableauWorkspace.exploreWorkspace{grid-template-columns:52px minmax(480px,1fr) 285px 260px!important;grid-template-areas:"visuals canvas props data";gap:0!important}
+.analyticsSharedDataPane .sharedDataFieldsPanel{height:calc(100% - 51px);overflow:auto;padding:8px}
+.analyticsCanvasCode{flex:0 0 auto;border-bottom:1px solid var(--border);background:#fff;z-index:2}
+.analyticsCanvasCode .sharedScriptWorkbench{border:0!important;border-radius:0!important;max-height:280px}
+.exploreCanvasPane{position:relative;overflow:hidden}
+.analyticsVisualBlock{transition:transform .08s ease;outline:none}
+.analyticsVisualBlock:focus{box-shadow:inset 0 0 0 2px rgba(80,110,140,.28)}
+.visualDeleteButton{display:grid;width:28px;height:28px;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--text-muted);cursor:pointer}
+.visualDeleteButton:hover{background:var(--surface-muted);color:var(--text)}
+.explorePropertiesTabs.twoTabs{grid-template-columns:repeat(2,1fr)!important}
+.analyticsVisualRail button svg{width:20px;height:20px}
+@media(max-width:1200px){.tableauWorkspace.exploreWorkspace{grid-template-columns:48px minmax(420px,1fr) 250px 220px!important}}
+
+/* UX V42 — Power BI-style Analytics canvas, full-bleed workspaces, aligned Code */
+/* Full-bleed Data / Table / Analytics */
+.explorePage,.tableWorkspaceStandalone,.modelWorkspacePage,.scriptsPage{gap:0!important;max-width:none!important;margin:0!important}
+.explorePage>.workspaceCommandBar,.tableWorkspaceStandalone>.workspaceCommandBar,.modelWorkspacePage>.workspaceCommandBar,.codeWorkspacePage>.workspaceCommandBar{border:0!important;border-radius:0!important}
+.tableWorkspaceStandalone>.workspaceCommandBar{border:0!important;border-radius:0!important}
+.tableWorkspaceStandalone .dataWorkbenchMain,.tableWorkspaceStandalone .dataSemanticPanel,.dashboardLikeModelWorkspace,.tableauWorkspace.exploreWorkspace{border:0!important;border-radius:0!important;box-shadow:none!important}
+.tableauWorkspace.exploreWorkspace{height:calc(100vh - var(--topbar-height,64px) - 44px)!important;min-height:560px!important}
+.tableauWorkspace .analyticsVisualRail,.tableauWorkspace .exploreDataPane,.tableauWorkspace .explorePropertiesPane{border-radius:0!important}
+.exploreCanvasPane{background:#eef0f3!important}
+
+/* Report title lives in the command bar instead of a large page heading. */
+.analyticsReportName{width:min(280px,28vw);height:30px;padding:0 8px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--text);font-size:12px;font-weight:650}
+.analyticsReportName:hover,.analyticsReportName:focus{border-color:var(--border,#dfe4ea);background:var(--surface,#fff);outline:0}
+
+/* Power BI-like report canvas + page strip. */
+.analyticsVisualBlock{position:relative;width:min(640px,78%);height:360px;min-height:220px;margin:24px;cursor:move;background:#fff;box-shadow:0 1px 3px rgba(18,26,33,.08);border-radius:1px!important;transition:box-shadow .12s!important}
+.analyticsVisualBlock.selected{box-shadow:0 0 0 2px #5b8fc0,0 2px 8px rgba(18,26,33,.10)!important}
+.analyticsVisualBlock:active{cursor:grabbing}
+.exploreCanvasHeader{flex:0 0 auto}
+.analyticsPageTabs{display:flex;align-items:stretch;gap:0;margin-top:auto;height:38px;border-top:1px solid var(--border,#dfe4ea);background:#f7f7f8}
+.analyticsPageTabsScroller{display:flex;min-width:0;flex:1;align-items:stretch;overflow-x:auto}
+.analyticsPageTab{display:flex;min-width:110px;max-width:190px;align-items:stretch;border-right:1px solid var(--border,#e1e5e9)}
+.analyticsPageTab button{width:100%;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--text-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.analyticsPageTab.active button{border-bottom-color:#4e7fa8;background:#fff;color:var(--text);font-weight:700}
+.analyticsPageTab input{width:100%;min-width:0;margin:4px;padding:0 7px;border:1px solid #7c9bb7;border-radius:3px;font-size:11px}
+.analyticsAddPage{display:grid;width:40px;place-items:center;border:0;border-left:1px solid var(--border,#e1e5e9);background:transparent;color:var(--text-muted);cursor:pointer}
+.analyticsAddPage:hover{background:#fff;color:var(--text)}
+.exploreCanvasFooter{height:24px!important;min-height:24px!important}
+
+/* Analytics code is docked above Properties/Format and pushes the panel content down. */
+.explorePropertiesPane{display:flex!important;min-height:0;flex-direction:column;overflow:hidden!important}
+.analyticsPropertiesCode{flex:0 0 auto;max-height:310px;border-bottom:1px solid var(--border,#e1e5e9);background:#fff;overflow:hidden}
+.analyticsPropertiesCode .sharedScriptWorkbench{border:0!important;border-radius:0!important;box-shadow:none!important}
+.analyticsPropertiesCode .workbenchCodeEditor{min-height:150px;max-height:220px}
+.explorePropertiesTabs{flex:0 0 auto}
+.explorePropertiesBody{min-height:0;overflow:auto}
+
+/* Code workspace: same edge-to-edge language as Data/Table/Analytics. */
+.codeWorkspacePage{height:calc(100vh - var(--topbar-height,64px) - 28px);overflow:hidden;background:var(--surface,#fff)}
+.codeWorkspaceNotebook{min-height:0;flex:1;overflow:auto;padding:0!important;background:#f7f8fa}
+.codeWorkspaceNotebook .notebookCell{margin:0!important;border:0!important;border-bottom:1px solid var(--border,#e4e8ed)!important;border-radius:0!important;box-shadow:none!important;background:#fff}
+.codeWorkspaceNotebook .notebookCellBody{border:0!important;border-radius:0!important}
+.codeWorkspaceNotebook .sharedScriptWorkbench{border:0!important;border-radius:0!important;box-shadow:none!important}
+.codeWorkspaceNotebook .notebookAddZone{margin:12px;border-radius:6px}
+.codeWorkspaceNotebook .workbenchCodeEditor{min-height:150px;background:#fbfcfd}
+
+@media(max-width:1100px){.analyticsVisualBlock{width:calc(100% - 32px);margin:16px}.analyticsReportName{width:180px}}
+
+/* UX V43 — draggable chart placeholders, wide Analytics code dock, detailed Format, true full bleed */
+.pageContent.workspaceFullBleed{padding:0!important;overflow:hidden;height:calc(100vh - var(--topbar-height));min-height:0!important}
+.pageContent.workspaceFullBleed>.explorePage,.pageContent.workspaceFullBleed>.tableWorkspaceStandalone,.pageContent.workspaceFullBleed>.modelWorkspacePage{width:100%;height:100%;margin:0!important;max-width:none!important}
+.tableauWorkspace.exploreWorkspace{height:calc(100% - 44px)!important;min-height:0!important;grid-template-columns:52px minmax(420px,1fr) 285px 260px!important;grid-template-rows:minmax(0,1fr);grid-template-areas:"visuals canvas props data"!important}
+.tableauWorkspace.exploreWorkspace.codeOpen{grid-template-rows:minmax(180px,32%) minmax(0,1fr);grid-template-areas:"visuals code code data" "visuals canvas props data"!important}
+.tableauWorkspace .analyticsWideCode{grid-area:code;min-width:0;min-height:0;overflow:hidden;border-bottom:1px solid var(--border,#e1e5e9);background:#fff}
+.analyticsWideCode .sharedScriptWorkbench{height:100%;border:0!important;border-radius:0!important;box-shadow:none!important}
+.analyticsWideCode .workbenchCodeEditor{min-height:110px;height:calc(100% - 42px);max-height:none!important}
+.exploreCanvasHeader{display:none!important}
+.analyticsVisualBlock{align-self:flex-start!important;justify-self:flex-start!important;overflow:hidden!important}
+.chartSpecificPlaceholder .emptyVisualIcon{width:58px;height:58px;border:0;background:var(--surface-muted,#f4f6f8);color:#4e708e}
+.chartSpecificPlaceholder strong{font-size:14px!important}
+.visualDeleteOnCanvas{position:absolute;top:7px;right:7px;z-index:6;background:rgba(255,255,255,.88)!important;border:1px solid var(--border,#e1e5e9)!important}
+.analyticsFormatPanel .propertySection{padding:12px}
+.analyticsFormatPanel .propertyField>span{float:right;font-size:10px;font-weight:500;color:var(--text-muted)}
+.analyticsFormatPanel select{width:100%;min-height:32px;border:1px solid var(--border,#dfe4ea);border-radius:5px;background:var(--surface,#fff);color:var(--text);font-size:11px;padding:0 7px}
+.analyticsFormatPanel input[type="range"]{width:100%}
+@media(max-width:1200px){.tableauWorkspace.exploreWorkspace{grid-template-columns:48px minmax(360px,1fr) 245px 220px!important}}
+
+/* UX V44 — stable Analytics canvas, chart-role Properties, custom visual tooltips, Data full bleed */
+.exploreCanvasPane{background:#fff!important;overscroll-behavior:none!important}
+.analyticsVisualBlock{user-select:none;-webkit-user-select:none}
+.analyticsVisualRail button{position:relative}
+.analyticsVisualRail button::after{content:attr(data-tooltip);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%) translateX(-3px);z-index:50;pointer-events:none;white-space:nowrap;padding:5px 7px;border:1px solid var(--border,#dfe4ea);border-radius:5px;background:#fff;color:var(--text,#18222c);box-shadow:0 4px 14px rgba(18,26,33,.12);font-size:10px;font-weight:600;opacity:0;visibility:hidden;transition:opacity .12s ease,transform .12s ease}
+.analyticsVisualRail button:hover::after,.analyticsVisualRail button:focus-visible::after{opacity:1;visibility:visible;transform:translateY(-50%) translateX(0)}
+.explorePropertiesPane.noSelection .explorePropertiesBody{display:block!important}
+.pageContent.workspaceFullBleed>.visualModelPage{width:100%!important;height:100%!important;margin:0!important;max-width:none!important;padding:0!important}
+.visualModelPage.modelOnlyPage{margin:0!important;max-width:none!important;padding:0!important;gap:0!important;height:100%!important;overflow:hidden!important}
+.visualModelPage.modelOnlyPage>.workspaceCommandBar{margin:0!important;border:0!important;border-radius:0!important}
+.visualModelPage.modelOnlyPage>.modelWorkspace{margin:0!important;width:100%!important;max-width:none!important;border-left:0!important;border-right:0!important;border-bottom:0!important;border-radius:0!important;box-shadow:none!important}

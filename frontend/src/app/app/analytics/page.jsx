@@ -1,2 +1,5 @@
-import {redirect} from "next/navigation";
-export default function AnalyticsPage(){redirect("/app/dashboards");}
+import ExploreStudio from "@/components/explore/ExploreStudio";
+
+export default function AnalyticsPage() {
+  return <ExploreStudio />;
+}

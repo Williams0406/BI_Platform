@@ -5,6 +5,7 @@ import {createScriptBlock,deleteScriptBlock,listScriptBlocks,updateScriptBlock} 
 import EmptyState from "@/components/ui/EmptyState";
 import ScriptWorkbench from "@/components/data/ScriptWorkbench";
 import Icon from "@/components/ui/Icon";
+import WorkspaceCommandBar from "@/components/data/WorkspaceCommandBar";
 
 const listValue=v=>Array.isArray(v)?v:v?.results||[];
 const newDraft=()=>({id:`draft-${Date.now()}-${Math.random().toString(36).slice(2)}`,language:"PYTHON",code:"",busy:false});
@@ -33,8 +34,8 @@ export default function ScriptsPage(){
  async function commitDraft(draft,{addNext=false}={}){if(!activeWorkspace?.id||!draft.code.trim()||draft.busy)return;patchDraft(draft.id,{busy:true});try{await createScriptBlock({workspace:activeWorkspace.id,name:`${draft.language} · ${new Date().toLocaleString()}`,language:draft.language,purpose:"",code:draft.code,context:{section:"notebook"},status:"SAVED"});setDrafts(current=>current.filter(d=>d.id!==draft.id));await load();if(addNext)addBlock()}finally{patchDraft(draft.id,{busy:false})}}
  async function removeSaved(id){await deleteScriptBlock(id);await load()}
  if(!activeWorkspace)return <EmptyState title="Select a workspace"/>;
- return <div className="pageStack scriptsPage"><header className="pageHeader scriptsHeader"><h1>Code</h1><button type="button" className="scriptsAddBlock" onClick={addBlock}><Icon name="plus" size={15}/><span>Code</span></button></header>
-  <section className="scriptNotebook">
+ return <div className="pageStack scriptsPage codeWorkspacePage"><WorkspaceCommandBar view="code"><button type="button" className="modelIconAction" onClick={addBlock} title="Add code block" aria-label="Add code block"><Icon name="plus" size={16}/></button></WorkspaceCommandBar>
+  <section className="scriptNotebook codeWorkspaceNotebook">
    {items.map((x,i)=><SavedCell key={x.id} item={x} index={i} onReload={load} onDelete={removeSaved} onAddNext={addBlock}/>)}
    {drafts.map((draft,index)=><article className="notebookCell notebookDraftCell" key={draft.id}><div className="notebookPrompt">In [{items.length+index+1}]</div><div className="notebookCellBody"><div className="draftCellActions"><span>New code block</span><button type="button" title="Remove draft" onClick={()=>setDrafts(c=>c.filter(d=>d.id!==draft.id))}>×</button></div><ScriptWorkbench language={draft.language} onLanguage={language=>patchDraft(draft.id,{language})} code={draft.code} onCode={code=>patchDraft(draft.id,{code})} onCommit={opts=>commitDraft(draft,opts)} busy={draft.busy} autoFocus/></div></article>)}
    <button type="button" className="notebookAddZone" onClick={addBlock}><Icon name="plus" size={16}/><span>Add code block</span><small>Click or use Shift+Enter from the previous block</small></button>

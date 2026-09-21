@@ -84,22 +84,39 @@ ASGI_APPLICATION = "config.asgi.application"
 # ------------------------------------------------------------
 # Control Plane Database
 # ------------------------------------------------------------
-# One canonical connection variable in every environment. Railway can set:
-# DATABASE_URL=${{Postgres.DATABASE_URL}}
-DATABASE_URL = env(
-    "DATABASE_URL",
-    "postgresql://postgres@127.0.0.1:5432/business_intelligence_control",
-)
-DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=env_int("DB_CONN_MAX_AGE", 60),
-        conn_health_checks=True,
-    )
-}
+# Production (Railway): DATABASE_URL is the canonical connection string.
+# Local development: when DATABASE_URL is not defined, use the DB_* values
+# from backend/.env. This keeps cloud credentials out of the local setup and
+# lets the same codebase run in both environments.
+DATABASE_URL = env("DATABASE_URL", "")
+DB_CONN_MAX_AGE = env_int("DB_CONN_MAX_AGE", 60)
+DB_CONNECT_TIMEOUT = env_int("DB_CONNECT_TIMEOUT", 5)
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=DB_CONN_MAX_AGE,
+            conn_health_checks=True,
+        )
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME", "business_intelligence_control"),
+            "USER": env("DB_USER", "postgres"),
+            "PASSWORD": env("DB_PASSWORD", ""),
+            "HOST": env("DB_HOST", "127.0.0.1"),
+            "PORT": env("DB_PORT", "5432"),
+            "CONN_MAX_AGE": DB_CONN_MAX_AGE,
+            "CONN_HEALTH_CHECKS": True,
+        }
+    }
+
 DATABASES["default"].setdefault("OPTIONS", {})
 DATABASES["default"]["OPTIONS"].setdefault(
-    "connect_timeout", env_int("DB_CONNECT_TIMEOUT", 5)
+    "connect_timeout", DB_CONNECT_TIMEOUT
 )
 
 AUTH_PASSWORD_VALIDATORS = [
