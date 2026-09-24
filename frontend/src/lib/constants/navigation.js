@@ -23,7 +23,7 @@ export function isNavigationItemActive(pathname, href) {
   if (!href) return false;
   if (href === "/app") return pathname === "/app";
   if (href === "/app/data-model") return pathname === "/app/data-model" || pathname.startsWith("/app/data-model/") || pathname.startsWith("/app/data-assets");
-  if (href === "/app/data-table") return pathname === "/app/data-table" || pathname.startsWith("/app/transformations") || pathname.startsWith("/app/dependencies") || pathname.startsWith("/app/executions") || pathname.startsWith("/app/metrics");
+  if (href === "/app/data-table") return pathname === "/app/data-table";
   if (href === "/app/analytics") return ["/app/analytics","/app/dashboards","/app/reports"].some((p)=>pathname===p||pathname.startsWith(`${p}/`));
   return pathname === href || pathname.startsWith(`${href}/`);
 }

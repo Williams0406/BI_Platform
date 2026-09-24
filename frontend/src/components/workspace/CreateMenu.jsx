@@ -5,8 +5,8 @@ import Icon from "@/components/ui/Icon";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
 
 const ITEMS=[
-  ["Connect data","plug","/app/data-sources"],["Import file","transfer","/app/import-export"],["Transformation","transform","/app/transformations"],
-  ["Measure","measure","/app/metrics"],["Analysis","explore","/app/analytics"],["Dashboard","dashboard","/app/dashboards"],["ML model","brain","/app/data-science"],["Optimization model","optimize","/app/optimization"]
+  ["Connect data","plug","/app/data-sources"],["Import file","transfer","/app/import-export"],["Code block","code","/app/scripts"],
+  ["Analytics","explore","/app/analytics"],["ML model","brain","/app/data-science"],["Optimization model","optimize","/app/optimization"]
 ];
 const BUILD_ROLES=["OWNER","ADMIN","BUILDER"];
 

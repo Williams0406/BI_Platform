@@ -58,14 +58,24 @@ class CatalogTableViewSet(viewsets.ModelViewSet):
         table = self.get_object()
         if table.data_source.mode != "MANAGED":
             return Response({"detail": "Only Platform tables can be physically deleted from Data."}, status=status.HTTP_400_BAD_REQUEST)
-        if not user_can_manage_datasource(request.user, table.data_source):
-            raise PermissionDenied("No tiene permisos para eliminar esta tabla.")
         from .managed_services import delete_managed_table
-        from governance.services import GovernanceError, mark_destructive_executed, require_approved_destructive_change
+        from governance.services import audit, GovernanceError, has_resource_permission, mark_destructive_executed, require_approved_destructive_change
+        ddl_allowed = has_resource_permission(
+            request.user, table.data_source.workspace, "TableAsset", "DDL", table.id
+        ) is True
+        if not ddl_allowed and not user_can_manage_datasource(request.user, table.data_source):
+            raise PermissionDenied("No tiene permisos DDL para eliminar esta tabla.")
         try:
-            approval = require_approved_destructive_change(table.data_source.workspace, "DELETE_MANAGED_TABLE", "TableAsset", table.id)
-            delete_managed_table(table)
-            mark_destructive_executed(approval, request.user)
+            if ddl_allowed:
+                # An explicit table/workspace DDL grant authorizes schema destruction directly.
+                workspace = table.data_source.workspace
+                resource_id = table.id
+                delete_managed_table(table)
+                audit(workspace, "DDL_DELETE_TABLE", "TableAsset", resource_id, request.user)
+            else:
+                approval = require_approved_destructive_change(table.data_source.workspace, "DELETE_MANAGED_TABLE", "TableAsset", table.id)
+                delete_managed_table(table)
+                mark_destructive_executed(approval, request.user)
         except GovernanceError as exc:
             return Response({"detail": str(exc), "requires_approval": True}, status=status.HTTP_409_CONFLICT)
         return Response(status=status.HTTP_204_NO_CONTENT)

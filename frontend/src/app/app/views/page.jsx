@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import Alert from "@/components/ui/Alert";
 import EmptyState from "@/components/ui/EmptyState";
@@ -11,6 +11,8 @@ import { listCatalogTables } from "@/lib/services/dataModel";
 import { listDataSources } from "@/lib/services/dataSources";
 import { createView, deleteView, listViews } from "@/lib/services/views";
 import { getApiErrorMessage } from "@/lib/utils/errors";
+import WorkspaceCommandBar from "@/components/data/WorkspaceCommandBar";
+import Icon from "@/components/ui/Icon";
 
 const WRITE_ROLES = ["OWNER", "ADMIN", "BUILDER"];
 const TEMPLATES = [
@@ -24,8 +26,9 @@ const TEMPLATES = [
 
 export default function OperationalViewsPage() {
   const { activeWorkspace, organizations } = useWorkspace();
+  const router = useRouter();
+  const templateHandled = useRef(false);
   const [views, setViews] = useState([]); const [tables, setTables] = useState([]); const [sources, setSources] = useState([]);
-  const [creating, setCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true); const [error, setError] = useState(""); const [message, setMessage] = useState("");
   const organization = useMemo(() => organizations.find((item) => item.id === activeWorkspace?.organization), [organizations, activeWorkspace]);
   const canWrite = WRITE_ROLES.includes(organization?.current_user_role);
@@ -42,6 +45,14 @@ export default function OperationalViewsPage() {
     } catch (requestError) { setError(getApiErrorMessage(requestError)); } finally { setIsLoading(false); }
   }
   useEffect(() => { load(); }, [activeWorkspace?.id]);
+  useEffect(()=>{
+    if(templateHandled.current||isLoading||!tables.length||typeof window==="undefined")return;
+    const requested=new URLSearchParams(window.location.search).get("template");
+    if(!requested)return;
+    const template=TEMPLATES.find(item=>item[0]===requested);
+    if(!template)return;
+    templateHandled.current=true; start(template);
+  },[isLoading,tables.length]);
 
   async function start(template) {
     if (!tables.length) { setError("Importa o conecta al menos una tabla antes de crear una Operational View."); return; }
@@ -56,10 +67,11 @@ export default function OperationalViewsPage() {
   async function remove(view) { if (!window.confirm(`¿Eliminar "${view.name}"?`)) return; try { await deleteView(view.id); setMessage("Vista eliminada."); await load(); } catch (e) { setError(getApiErrorMessage(e)); } }
 
   if (!activeWorkspace) return <EmptyState title="Selecciona un workspace" description="Operational Views pertenece al workspace activo." />;
-  return <div className="pageStack">
-    <header className="pageHeader pageHeaderActions"><div><p className="eyebrow">Operational apps</p><h1>Operational Views</h1></div>{canWrite && <button className="button primaryButton" onClick={() => setCreating((value) => !value)} title="New view" aria-label="New view">＋</button>}</header>
+  return <div className="operationsWorkspacePage">
+    <WorkspaceCommandBar view="operations">{canWrite&&<button type="button" className="modelIconAction" onClick={()=>start(["TABLE", "+", "Blank", "Empty canvas"])} title="New Operations view" aria-label="New Operations view"><Icon name="plus" size={17}/></button>}</WorkspaceCommandBar>
+    <div className="operationsWorkspaceBody">
     {error && <Alert type="error">{error}</Alert>}{message && <Alert type="success">{message}</Alert>}
-    {creating && <section className="ovStartStudio"><div className="ovStartHeader"><div><p className="eyebrow">Start building</p><h2>Choose a layout</h2><p>The view is not tied to one table. After opening the canvas, use Data to bind fields from any table available in the workspace.</p></div><button onClick={() => setCreating(false)}>×</button></div><div className="ovTemplateGrid"><button className="ovTemplateCard blank" onClick={() => start(["TABLE", "+", "Blank", "Empty canvas"])}><span>＋</span><strong>Blank canvas</strong><small>Start with data and drag components</small></button>{TEMPLATES.map((template) => <button className="ovTemplateCard" key={template[0]} onClick={() => start(template)}><span>{template[1]}</span><strong>{template[2]}</strong><small>{template[3]}</small></button>)}</div></section>}
-    <section className="card"><div className="cardHeader"><div><h2>Views</h2><p>{views.length} operational interface(s)</p></div></div>{isLoading ? <Spinner label="Loading views…" /> : views.length === 0 ? <EmptyState title="No operational views yet" description="Start blank or choose a functional template." /> : <div className="ovViewGrid">{views.map((view) => <article className="ovViewCard" key={view.id}><div className="ovViewPreview"><span>{TEMPLATES.find((item) => item[0] === view.view_type)?.[1] || "◇"}</span></div><div><small>{view.view_type}</small><h3>{view.name}</h3><p>{view.bindings?.length || 0} bound fields · {view.status}</p></div><div><Link className="button primaryButton smallButton" href={`/app/views/${view.id}`} title="Open builder" aria-label="Open builder">↗</Link>{canWrite && <button className="ovIconButton danger" title="Delete" onClick={() => remove(view)}>×</button>}</div></article>)}</div>}</section>
+    <section className="operationsViewsSection">{isLoading ? <Spinner label="Loading views…" /> : views.length === 0 ? <EmptyState title="No operational views yet" description="Start blank or choose a functional template." /> : <div className="ovViewGrid workspaceLibraryGrid">{views.map((view) => <article className="ovViewCard ovViewCardClickable workspaceLibraryCard" key={view.id} role="link" tabIndex={0} onClick={()=>router.push(`/app/views/${view.id}`)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();router.push(`/app/views/${view.id}`)}}}><div className="ovViewCardCopy"><small>OPERATION</small><h3>{view.name}</h3><p>{view.bindings?.length || 0} bound fields · {view.status}</p></div>{canWrite && <button className="ovIconButton danger ovCardDelete" title="Delete" aria-label={`Delete ${view.name}`} onClick={(e)=>{e.stopPropagation();remove(view)}}>×</button>}</article>)}</div>}</section>
+    </div>
   </div>;
 }

@@ -103,13 +103,9 @@ export default function OperationsPage() {
 
   return (
     <div className="pageStack">
-      <section className="pageHeader">
+      <section className="pageHeader platformSettingsHeader">
         <div>
-          <p className="eyebrow">Manage · Platform health</p>
           <h1>Platform health</h1>
-          <p>
-            Check API health, required infrastructure, workspace integration and privileged platform telemetry.
-          </p>
         </div>
         <div className="headerActions">
           <button type="button" className="button buttonSecondary" onClick={refresh} disabled={loading}>

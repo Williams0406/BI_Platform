@@ -284,7 +284,7 @@ function DashboardStudioContent() {
                       <Link href={`/app/dashboards/${dashboard.id}`}>Edit</Link>
 
                       <Link
-                        href={`/app/dashboards/${dashboard.id}?fullscreen=1`}
+                        href={`/app/dashboards/${dashboard.id}`}
                       >
                         View
                       </Link>
@@ -334,7 +334,7 @@ function DashboardStudioContent() {
               {reports.map((report) => (
                 <article className="overviewModule" key={report.id}>
                   <Link
-                    href={`/app/reports/${report.id}?fullscreen=1`}
+                    href={`/app/reports/${report.id}`}
                     className="overviewModulePreview"
                   >
                     <Icon name="report" size={34} />
@@ -353,7 +353,7 @@ function DashboardStudioContent() {
                     <div className="inlineActions">
                       <Link href={`/app/reports/${report.id}`}>Open</Link>
 
-                      <Link href={`/app/reports/${report.id}?fullscreen=1`}>
+                      <Link href={`/app/reports/${report.id}`}>
                         Full screen
                       </Link>
 

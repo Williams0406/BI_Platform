@@ -61,12 +61,12 @@ export function buildSetupSteps(state) {
     {
       id:"prepare",label:"Prepare data",description:"Optional: transform raw inputs when analysis needs a reusable derived dataset.",
       complete:state.transformations.length>0,required:false,
-      href:"/app/transformations",action:state.transformations.length?"Review transformations":"Prepare data (optional)",
+      href:"/app/scripts",action:state.transformations.length?"Open Code":"Prepare data in Code (optional)",
     },
     {
       id:"metric",label:"Define business meaning",description:"Create a semantic model and reusable measure for visual analysis.",
       complete:state.metrics.length>0,required:true,
-      href:"/app/metrics",action:state.metrics.length?"Review measures":"Create a measure",
+      href:"/app/scripts",action:state.metrics.length?"Open Code":"Define a measure in Code",
     },
     {
       id:"analysis",label:"Save an analysis",description:"Use Explore to answer a question and save the useful visual.",
@@ -76,7 +76,7 @@ export function buildSetupSteps(state) {
     {
       id:"dashboard",label:"Build a dashboard",description:"Compose saved analyses into a decision view for other users.",
       complete:state.dashboards.length>0,required:true,
-      href:"/app/dashboards",action:state.dashboards.length?"Open dashboards":"Build a dashboard",
+      href:"/app/analytics",action:state.dashboards.length?"Open analytics":"Build a dashboard",
     },
   ];
 }
@@ -122,8 +122,7 @@ export default function WorkspaceSetupGuide({
       <div className="consumerStartGrid">
         <Link href="/app/data-assets"><strong>Browse Catalog</strong><span>Understand available governed data.</span></Link>
         <Link href="/app/analytics"><strong>Explore analyses</strong><span>Review analytical questions and results.</span></Link>
-        <Link href="/app/dashboards"><strong>Open dashboards</strong><span>Consume shared decision views.</span></Link>
-        <Link href="/app/executions"><strong>View activity</strong><span>Understand current and recent processing.</span></Link>
+        <Link href="/app/analytics"><strong>Open analytics</strong><span>Consume shared decision views.</span></Link>
       </div>
     </section>;
   }

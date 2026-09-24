@@ -1,9 +1,7 @@
 import { listCharts, listDashboards, listReports } from "@/lib/services/analytics";
 import { listDataAssets, listDataSources } from "@/lib/services/dataSources";
 import { listModels } from "@/lib/services/dataScience";
-import { listMetrics } from "@/lib/services/metrics";
 import { listOptimizationModels } from "@/lib/services/optimization";
-import { listTransformations } from "@/lib/services/transformations";
 import { listViews } from "@/lib/services/views";
 
 function rows(value) {
@@ -21,9 +19,7 @@ export async function searchWorkspace(workspaceId, query = "") {
   const loaders = [
     ["Data source", "plug", listDataSources(workspaceId), (x) => `/app/data-sources/${x.id}`, (x) => `${x.mode || ""} ${x.engine || ""}`],
     ["Data asset", "catalog", listDataAssets(workspaceId), (x) => `/app/data-assets/${x.id}`, (x) => x.asset_type || ""],
-    ["Transformation", "transform", listTransformations(workspaceId), (x) => `/app/transformations/${x.id}`, () => "Prepare"],
     ["Operational view", "view", listViews({ workspace: workspaceId }), (x) => `/app/views/${x.id}`, (x) => x.view_type || ""],
-    ["Metric", "measure", listMetrics(workspaceId), (x) => `/app/metrics/${x.id}`, () => "Measure"],
     ["Chart", "explore", listCharts(workspaceId), (x) => `/app/analytics/${x.id}`, (x) => x.chart_type || ""],
     ["Dashboard", "dashboard", listDashboards(workspaceId), (x) => `/app/dashboards/${x.id}`, () => "Dashboard"],
     ["Report", "report", listReports(workspaceId), (x) => `/app/reports/${x.id}`, () => "Report"],

@@ -1,5 +1,2 @@
-import ExploreStudio from "@/components/explore/ExploreStudio";
-
-export default function AnalyticsPage() {
-  return <ExploreStudio />;
-}
+import AnalyticsLanding from "@/components/explore/AnalyticsLanding";
+export default function AnalyticsPage(){return <AnalyticsLanding/>;}

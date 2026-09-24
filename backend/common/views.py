@@ -98,7 +98,19 @@ class ScriptBlockSerializer(serializers.ModelSerializer):
 class ScriptBlockViewSet(viewsets.ModelViewSet):
     serializer_class=ScriptBlockSerializer; permission_classes=[IsAuthenticated]
     def get_queryset(self):
-        qs=ScriptBlock.objects.select_related('workspace','created_by').prefetch_related('artifacts'); workspace=self.request.query_params.get('workspace'); return qs.filter(workspace_id=workspace) if workspace else qs.none()
+        # Detail actions (PATCH/DELETE) do not carry the workspace query parameter.
+        # Always scope scripts to workspaces the current user can access, then apply
+        # the optional workspace filter used by the notebook list endpoint.
+        qs=(ScriptBlock.objects
+            .select_related('workspace','created_by')
+            .prefetch_related('artifacts')
+            .filter(
+                workspace__organization__memberships__user=self.request.user,
+                workspace__organization__memberships__is_active=True,
+            )
+            .distinct())
+        workspace=self.request.query_params.get('workspace')
+        return qs.filter(workspace_id=workspace) if workspace else qs
     @action(detail=False,methods=['post'])
     def analyze(self,request): return Response(analyze(request.data.get('language','PYTHON'),request.data.get('code','')))
     @action(detail=True,methods=['post'],url_path='promote-metric')

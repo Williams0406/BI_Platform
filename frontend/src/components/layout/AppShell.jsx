@@ -1,16 +1,14 @@
 "use client";
-import { useEffect,useState } from "react";
-import { usePathname,useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import AuthGuard from "@/components/auth/AuthGuard";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import GlobalOptionsBar from "@/components/layout/GlobalOptionsBar";
 export default function AppShell({children}){
- const [sidebarOpen,setSidebarOpen]=useState(false);
- const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
- const pathname=usePathname();const search=useSearchParams();
- useEffect(()=>{try{setSidebarCollapsed(localStorage.getItem("bi:sidebar-collapsed")==="1")}catch{}},[]);
- function toggleSidebar(){setSidebarCollapsed(v=>{const next=!v;try{localStorage.setItem("bi:sidebar-collapsed",next?"1":"0")}catch{}return next})}
- const fullscreen=search.get("fullscreen")==="1"&&(pathname.startsWith("/app/dashboards/")||pathname.startsWith("/app/reports/"));
- const fullBleedWorkspace = pathname === "/app/data" || pathname === "/app/data-model" || pathname === "/app/data-table" || pathname === "/app/analytics" || pathname.startsWith("/app/analytics/");
- return <AuthGuard>{fullscreen?<div className="fullscreenApp"><main id="main-content" tabIndex={-1}>{children}</main></div>:<div className={`appShell ${sidebarCollapsed?"sidebarIsCollapsed":""}`}><a className="skipLink" href="#main-content">Skip to main content</a><Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)} collapsed={sidebarCollapsed} onToggleCollapse={toggleSidebar}/><div className="appMain"><Topbar onMenuClick={()=>setSidebarOpen(true)}/><main className={`pageContent ${fullBleedWorkspace?"workspaceFullBleed":""}`} id="main-content" tabIndex={-1}>{children}</main></div></div>}</AuthGuard>
+ const [sidebarOpen,setSidebarOpen]=useState(false); const pathname=usePathname();
+ const platformSettingsPaths=["/app/data-sources","/app/organizations","/app/governance","/app/customer-gateway","/app/environments","/app/operations","/app/import-export"];
+ const platformSettingsPage=platformSettingsPaths.some(base=>pathname===base||pathname.startsWith(`${base}/`));
+ const fullBleedWorkspace = pathname === "/app/data" || pathname === "/app/data-model" || pathname === "/app/data-table" || pathname === "/app/analytics" || pathname.startsWith("/app/analytics/") || pathname.startsWith("/app/dashboards/") || pathname.startsWith("/app/reports/") || pathname === "/app/views" || pathname.startsWith("/app/views/") || pathname === "/app/scripts";
+ return <AuthGuard><div className="appShell sidebarIconsOnly"><a className="skipLink" href="#main-content">Skip to main content</a><Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)}/><div className="appMain"><Topbar onMenuClick={()=>setSidebarOpen(true)}/><GlobalOptionsBar/><main className={`pageContent ${fullBleedWorkspace?"workspaceFullBleed":""} ${platformSettingsPage?"platformSettingsContent":""}`} id="main-content" tabIndex={-1}>{children}</main></div></div></AuthGuard>
 }

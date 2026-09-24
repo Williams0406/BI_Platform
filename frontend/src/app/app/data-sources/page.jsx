@@ -84,7 +84,8 @@ export default function DataSourcesPage() {
 
   if (!activeWorkspace) return <EmptyState title="Selecciona un workspace" description="Data Sources requiere un workspace activo. Crea o selecciona uno desde la barra superior." />;
 
-  return <div className="pageStack dataHubPage">
+  return <div className="pageStack dataHubPage platformSettingsPage">
+    <header className="pageHeader platformSettingsHeader"><h1>Sources</h1></header>
     <DataHubTabs />
 
     {error && <Alert type="error">{error}</Alert>}{message && <Alert type="success">{message}</Alert>}

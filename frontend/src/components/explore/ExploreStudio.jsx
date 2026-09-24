@@ -13,7 +13,7 @@ import WorkspaceCommandBar from "@/components/data/WorkspaceCommandBar";
 import ScriptWorkbench from "@/components/data/ScriptWorkbench";
 import SharedDataPanel from "@/components/data/SharedDataPanel";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
-import { createChart, getChart, listCharts, updateChart } from "@/lib/services/analytics";
+import { createChart, getChart, getDashboard, listCharts, updateChart } from "@/lib/services/analytics";
 import { getCatalogTable, listCatalogTables } from "@/lib/services/dataModel";
 import { listDataSources } from "@/lib/services/dataSources";
 import { listSemanticModels, queryMetric } from "@/lib/services/metrics";
@@ -133,7 +133,7 @@ function DropZone({ label, hint, emptyText, children, onDrop, compact = false })
   );
 }
 
-export default function ExploreStudio({ chartId = null }) {
+export default function ExploreStudio({ chartId = null, dashboardId = null }) {
   const { activeWorkspace, organizations } = useWorkspace();
   const [models, setModels] = useState([]);
   const [tables, setTables] = useState([]);
@@ -159,6 +159,8 @@ export default function ExploreStudio({ chartId = null }) {
   const [savedOpen, setSavedOpen] = useState(false);
   const [fieldSearch, setFieldSearch] = useState("");
   const [rightTab, setRightTab] = useState("properties");
+  const [propertiesOpen,setPropertiesOpen]=useState(true);
+  const [dataPanelOpen,setDataPanelOpen]=useState(true);
   const [visualFormat,setVisualFormat]=useState({title:true,subtitle:false,border:true,background:"#ffffff",fontSize:12,titleSize:14,legend:true,legendPosition:"bottom",xAxis:true,yAxis:true,gridlines:true,dataLabels:false,opacity:100,radius:0,shadow:false,padding:16});
   const [visualPosition,setVisualPosition]=useState({x:0,y:0});
   const [queryVersion, setQueryVersion] = useState(0);
@@ -168,6 +170,7 @@ export default function ExploreStudio({ chartId = null }) {
   const [readingView,setReadingView]=useState(false);
   const [visualSelected,setVisualSelected]=useState(false);
   const [reportName,setReportName]=useState("Untitled report");
+  useEffect(()=>{if(!dashboardId)return;let live=true;getDashboard(dashboardId).then(d=>{if(live)setReportName(d?.name||"Untitled dashboard")}).catch(()=>{});return()=>{live=false}},[dashboardId]);
   const [pages,setPages]=useState([{id:"page-1",name:"Page 1",state:null}]);
   const [activePageId,setActivePageId]=useState("page-1");
   const [renamingPageId,setRenamingPageId]=useState(null);
@@ -401,11 +404,11 @@ export default function ExploreStudio({ chartId = null }) {
         </section>
       )}
 
-      <div className={`exploreWorkspace tableauWorkspace ${readingView?"readingView":""} ${codeOpen?"codeOpen":""}`}>
-        <aside className="analyticsVisualRail" aria-label="Visuals">{CHART_TYPES.map(item=><button type="button" key={item.id} className={chartType===item.id&&visualSelected?"active":""} data-tooltip={item.label} aria-label={item.label} onClick={()=>{setChartType(item.id);setMetricId("");setDimensionIds([]);setDataset(null);setVisualPosition({x:0,y:0});setVisualSelected(true)}}><Icon name={item.icon} size={18}/></button>)}</aside>
+      <div className={`exploreWorkspace tableauWorkspace ${readingView?"readingView":""} ${codeOpen?"codeOpen":""} ${propertiesOpen?"":"propertiesCollapsed"} ${dataPanelOpen?"":"dataCollapsed"}`}>
+        <aside className="analyticsVisualRail" aria-label="Visuals">{CHART_TYPES.map(item=><button type="button" key={item.id} className={chartType===item.id&&visualSelected?"active":""} data-tooltip={item.label} aria-label={item.label} onClick={()=>{setChartType(item.id);setMetricId("");setDimensionIds([]);setDataset(null);setVisualPosition({x:0,y:0});setVisualSelected(true)}}><Icon name={item.icon} size={18}/></button>)}</aside>{!propertiesOpen&&<button type="button" className="analyticsCollapsedPanelButton properties" onClick={()=>setPropertiesOpen(true)}>Properties</button>}{!dataPanelOpen&&<button type="button" className="analyticsCollapsedPanelButton data" onClick={()=>setDataPanelOpen(true)}>Data</button>}
         {codeOpen&&<div className="analyticsWideCode"><ScriptWorkbench compact language={codeLanguage} onLanguage={setCodeLanguage} code={code} onCode={setCode} onCommit={()=>setMessage("Code block ready for execution integration.")} /></div>}
         <aside className="exploreDataPane analyticsSharedDataPane">
-          <div className="explorePaneHeader"><span>DATA</span><strong>Fields</strong></div>
+          <div className="explorePaneHeader"><strong>Data</strong><button type="button" className="panelCollapseButton" onClick={()=>setDataPanelOpen(false)} title="Collapse Data">›</button></div>
           <SharedDataPanel
             tables={tables}
             models={models}
@@ -429,7 +432,7 @@ export default function ExploreStudio({ chartId = null }) {
         </main>
 
         <aside className={`explorePropertiesPane ${visualSelected?"":"noSelection"}`}>
-          <div className="explorePropertiesTabs twoTabs">
+          <div className="explorePropertiesTabs twoTabs"><button type="button" className="panelCollapseButton analyticsPanelCollapse" onClick={()=>setPropertiesOpen(false)} title="Collapse Properties">›</button>
             <button type="button" className={rightTab === "properties" ? "active" : ""} onClick={() => setRightTab("properties")}>Properties</button>
             <button type="button" className={rightTab === "format" ? "active" : ""} onClick={() => setRightTab("format")}>Format</button>
           </div>

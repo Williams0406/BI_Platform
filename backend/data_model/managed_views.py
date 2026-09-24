@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from workspaces.models import Membership
-from governance.services import GovernanceError, mark_destructive_executed, require_approved_destructive_change
+from governance.services import audit, GovernanceError, has_resource_permission, mark_destructive_executed, require_approved_destructive_change
 
 from .managed_serializers import ManagedTableCreateSerializer
 from .managed_services import create_managed_table, delete_managed_table
@@ -82,21 +82,30 @@ class ManagedTableDeleteView(APIView):
         if not table:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if not can_write_table(request.user, table):
+        ddl_allowed = has_resource_permission(
+            request.user, table.data_source.workspace, "TableAsset", "DDL", table.id
+        ) is True
+        if not ddl_allowed and not can_write_table(request.user, table):
             return Response(
-                {"detail": "No tiene permisos para eliminar esta tabla."},
+                {"detail": "No tiene permisos DDL para eliminar esta tabla."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         try:
-            approval = require_approved_destructive_change(
-                table.data_source.workspace,
-                "DELETE_MANAGED_TABLE",
-                "TableAsset",
-                table.id,
-            )
-            delete_managed_table(table)
-            mark_destructive_executed(approval, request.user)
+            if ddl_allowed:
+                workspace = table.data_source.workspace
+                resource_id = table.id
+                delete_managed_table(table)
+                audit(workspace, "DDL_DELETE_TABLE", "TableAsset", resource_id, request.user)
+            else:
+                approval = require_approved_destructive_change(
+                    table.data_source.workspace,
+                    "DELETE_MANAGED_TABLE",
+                    "TableAsset",
+                    table.id,
+                )
+                delete_managed_table(table)
+                mark_destructive_executed(approval, request.user)
         except GovernanceError as exc:
             return Response(
                 {"detail": str(exc), "requires_approval": True},

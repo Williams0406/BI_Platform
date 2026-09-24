@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 
 import Breadcrumbs from "@/components/layout/Breadcrumbs";
 import Icon from "@/components/ui/Icon";
-import ActivityPanel from "@/components/workspace/ActivityPanel";
 import CreateMenu from "@/components/workspace/CreateMenu";
 import GlobalSearch from "@/components/workspace/GlobalSearch";
 import { ROUTES } from "@/lib/constants/routes";
@@ -20,7 +19,6 @@ export default function Topbar({ onMenuClick }) {
   const { organizations, workspaces, activeWorkspace, setActiveWorkspace, isLoading } = useWorkspace();
   const [searchOpen, setSearchOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
 
   const activeOrganization = useMemo(
     () => organizations.find((item) => item.id === activeWorkspace?.organization),
@@ -70,8 +68,6 @@ export default function Topbar({ onMenuClick }) {
         <div className="topbarActions">
           <button type="button" className="topbarSearchButton" onClick={() => setSearchOpen(true)} type="button"><Icon name="explore" size={17}/><span>Search</span><kbd>Ctrl K</kbd></button>
           {canBuild ? <div className="createMenuWrap"><button className="button buttonPrimary topbarCreate" type="button" onClick={()=>setCreateOpen(v=>!v)}>+ Create</button><CreateMenu open={createOpen} onClose={()=>setCreateOpen(false)}/></div> : null}
-          <button type="button" className="iconButton" onClick={()=>setActivityOpen(true)} title="Activity" aria-label="Activity"><Icon name="activity" size={18}/></button>
-          {canAdminister ? <Link className="iconButton desktopOnly" href="/app/operations" title="Platform health" aria-label="Platform health"><Icon name="pulse" size={18}/></Link> : null}
           <div className="topbarDivider" />
           <div className="userMenu">
             <div className="avatar">{initials(user)}</div>
@@ -81,7 +77,6 @@ export default function Topbar({ onMenuClick }) {
         </div>
       </header>
       <GlobalSearch open={searchOpen} onClose={()=>setSearchOpen(false)}/>
-      <ActivityPanel open={activityOpen} onClose={()=>setActivityOpen(false)}/>
     </>
   );
 }

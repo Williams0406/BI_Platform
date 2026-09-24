@@ -800,7 +800,7 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
     <div className="dashboardStudio powerDashboardStudio">
       <header className="dashboardStudioBar powerDashboardTopbar">
         <div className="dashboardStudioIdentity">
-          <Link href="/app/dashboards" className="iconTextButton dashboardBackIcon" aria-label="Back to dashboards" title="Back">←</Link>
+          <Link href="/app/analytics" className="iconTextButton dashboardBackIcon" aria-label="Back to dashboards" title="Back">←</Link>
           <div className="dashboardEditorContext">
             <strong>{draftMode ? "Dashboard canvas" : "Dashboard"}</strong>
             <span>{pages.find((page) => page.id === effectivePageId)?.name || "Page"}</span>

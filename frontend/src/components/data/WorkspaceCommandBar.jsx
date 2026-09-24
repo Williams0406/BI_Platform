@@ -9,9 +9,10 @@ export default function WorkspaceCommandBar({view="data",codeOpen=false,onToggle
   actions.push({key:"activity",icon:"activity",label:"Activity",fn:onActivity});
  }
  if(view==="analytics"){
-  actions.push({key:"save",icon:"save",label:"Save",fn:onSave});
-  actions.push({key:"reading",icon:"explore",label:"Reading view",fn:onReading});
-  actions.push({key:"refresh",icon:"activity",label:"Refresh",fn:onRefresh});
+  if(onSave)actions.push({key:"save",icon:"save",label:"Save",fn:onSave});
+  if(onReading)actions.push({key:"reading",icon:"explore",label:"Reading view",fn:onReading});
+  if(onRefresh)actions.push({key:"refresh",icon:"activity",label:"Refresh",fn:onRefresh});
  }
- return <div className="workspaceCommandBar"><div className="workspaceCommandIdentity"><Icon name={view==="analytics"?"chart":view==="table"?"records":"model"} size={17}/><strong>{view==="analytics"?"Analytics":view==="table"?"Table":"Data"}</strong></div><div className="workspaceCommandActions">{children}{actions.map(a=><button key={a.key} type="button" className={`modelIconAction ${a.active?"active":""}`} title={a.label} aria-label={a.label} onClick={a.fn}><Icon name={a.icon} size={18}/></button>)}</div></div>;
+ const meta=view==="analytics"?{icon:"chart",label:"Analytics"}:view==="table"?{icon:"table",label:"Table"}:view==="code"?{icon:"code",label:"Code"}:view==="operations"?{icon:"view",label:"Operations"}:{icon:"model",label:"Data"};
+ return <div className="workspaceCommandBar"><div className="workspaceCommandIdentity"><Icon name={meta.icon} size={17}/><strong>{meta.label}</strong></div><div className="workspaceCommandActions">{children}{actions.map(a=><button key={a.key} type="button" className={`modelIconAction ${a.active?"active":""}`} title={a.label} aria-label={a.label} onClick={a.fn}><Icon name={a.icon} size={18}/></button>)}</div></div>;
 }

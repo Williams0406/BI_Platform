@@ -3055,3 +3055,244 @@ textarea{min-height:88px}
 .visualModelPage.modelOnlyPage{margin:0!important;max-width:none!important;padding:0!important;gap:0!important;height:100%!important;overflow:hidden!important}
 .visualModelPage.modelOnlyPage>.workspaceCommandBar{margin:0!important;border:0!important;border-radius:0!important}
 .visualModelPage.modelOnlyPage>.modelWorkspace{margin:0!important;width:100%!important;max-width:none!important;border-left:0!important;border-right:0!important;border-bottom:0!important;border-radius:0!important;box-shadow:none!important}
+
+/* UX V45 — icon-only global navigation + stable Data preview */
+:root{--sidebar-width:64px}
+.appShell.sidebarIconsOnly{--sidebar-width:64px}
+.iconOnlySidebar{width:64px!important;overflow:visible!important}
+.iconOnlySidebar .sidebarNav.iconOnlyNav{display:flex;height:100%;min-height:0;flex-direction:column;justify-content:space-evenly;align-items:center;gap:2px;padding:8px 7px!important;overflow:visible!important}
+.iconNavItem{position:relative;display:grid;width:42px;height:42px;flex:0 1 42px;place-items:center;border-radius:8px;color:var(--sidebar-muted);text-decoration:none;transition:background .12s ease,color .12s ease,transform .12s ease}
+.iconNavItem:hover{background:rgba(255,255,255,.08);color:#fff}
+.iconNavItemActive{background:rgba(255,255,255,.11);color:#fff}
+.iconNavItemActive::before{content:"";position:absolute;left:-7px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:#8eb5d7}
+.sidebarIconTooltip{position:absolute;left:50px;top:50%;z-index:1000;max-width:210px;padding:6px 9px;border:1px solid rgba(255,255,255,.08);border-radius:6px;background:#252c37;color:#f7f9fb;font-size:11px;font-weight:600;line-height:1.2;white-space:nowrap;opacity:0;pointer-events:none;transform:translate(5px,-50%);transition:opacity .1s ease,transform .1s ease;box-shadow:0 5px 16px rgba(0,0,0,.18)}
+.iconNavItem:hover .sidebarIconTooltip,.iconNavItem:focus-visible .sidebarIconTooltip{opacity:1;transform:translate(0,-50%)}
+.sidebarIconsOnly .appMain{width:calc(100% - 64px)!important;margin-left:64px!important}
+@media(max-width:860px){.iconOnlySidebar{transform:translateX(-100%)}.iconOnlySidebar.sidebarOpen{transform:translateX(0)}.sidebarIconsOnly .appMain{width:100%!important;margin-left:0!important}}
+
+/* Data: code floats over the upper canvas so opening it never moves the bottom sample. */
+.dashboardLikeModelWorkspace{position:relative!important;grid-template-columns:minmax(0,1fr) 310px!important;grid-template-rows:minmax(0,1fr) minmax(230px,38%)!important;grid-template-areas:"canvas inspector" "sample inspector"!important;height:calc(100vh - var(--topbar-height,64px) - 44px)!important;min-height:0!important;overflow:hidden!important}
+.dashboardLikeModelWorkspace>.modelCanvasCodeDock{position:absolute!important;left:0;right:310px;top:0;z-index:30;max-height:310px;border-bottom:1px solid var(--border,#e5e9ef);background:#fff;box-shadow:0 6px 16px rgba(18,26,33,.06)}
+.dashboardLikeModelWorkspace>.visualModelShell{grid-area:canvas!important;height:100%!important;min-height:0!important}
+.dashboardLikeModelWorkspace>.modelDataSample{grid-area:sample!important;height:100%!important;max-height:none!important;min-height:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+.dashboardLikeModelWorkspace>.modelDataSample .modelSampleTable{flex:1!important;min-height:0!important;max-height:none!important;overflow:auto!important}
+.dashboardLikeModelWorkspace>.modelDataSample .modelSampleTable table{min-width:100%;width:max-content}
+.dashboardLikeModelWorkspace>.modelDataSample .modelDataSampleHeader{flex:0 0 auto}
+.dashboardLikeModelWorkspace>.modelInspector{grid-area:inspector!important;min-height:0!important;overflow:auto!important}
+@media(max-width:1150px){.dashboardLikeModelWorkspace{grid-template-columns:minmax(0,1fr) 270px!important}.dashboardLikeModelWorkspace>.modelCanvasCodeDock{right:270px}}
+@media(max-width:900px){.dashboardLikeModelWorkspace{grid-template-columns:1fr!important;grid-template-rows:minmax(360px,1fr) minmax(230px,38%) auto!important;grid-template-areas:"canvas" "sample" "inspector"!important;height:auto!important}.dashboardLikeModelWorkspace>.modelCanvasCodeDock{right:0}.dashboardLikeModelWorkspace>.modelInspector{max-height:420px}}
+
+/* UX v46 — global option bar, aligned workspaces and refined Code / Operations */
+:root{--global-options-height:38px}
+.globalOptionsBar{height:var(--global-options-height);flex:0 0 var(--global-options-height);display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-bottom:1px solid #e4e8ed;background:#fbfcfd;position:relative;z-index:45}
+.globalOptionsLeft,.globalOptionsRight{display:flex;align-items:center;min-width:0;height:100%}.globalOptionsLabel{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#89919d}.globalOptionsDivider{width:1px;height:16px;background:#dfe3e8;margin:0 9px}.globalOptionsMenu{position:relative;height:100%;display:flex;align-items:center}.globalOptionsTrigger{height:28px;display:flex;align-items:center;gap:6px;border:1px solid transparent;border-radius:6px;background:transparent;padding:0 8px;color:#4b5563;font-size:11px;font-weight:600;cursor:pointer}.globalOptionsTrigger:hover,.globalOptionsTrigger.active,.globalOptionsTrigger[aria-expanded=true]{background:#fff;border-color:#dfe4ea;color:#20242b}.globalOptionsDropdown{position:absolute;left:0;top:33px;width:480px;padding:10px;border:1px solid #dfe4ea;border-radius:9px;background:#fff;box-shadow:0 14px 38px rgba(18,28,45,.14);z-index:120}.globalOptionsDropdownHead{display:flex;flex-direction:column;gap:2px;padding:3px 5px 10px;border-bottom:1px solid #eef0f3}.globalOptionsDropdownHead strong{font-size:12px}.globalOptionsDropdownHead span{font-size:10px;color:#7b8490}.globalOptionsGrid{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding-top:7px}.globalOptionItem{display:grid;grid-template-columns:30px 1fr;gap:8px;align-items:center;padding:8px;border-radius:7px;text-decoration:none;color:inherit}.globalOptionItem:hover,.globalOptionItem.active{background:#f3f5f7}.globalOptionIcon{display:grid;width:30px;height:30px;place-items:center;border:1px solid #e4e8ed;border-radius:6px;background:#fff;color:#4d5867}.globalOptionItem strong,.globalOptionItem small{display:block}.globalOptionItem strong{font-size:11px}.globalOptionItem small{margin-top:2px;font-size:9px;color:#7b8490}.globalWorkspaceName{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#89919d}
+.pageContent{min-height:calc(100vh - var(--topbar-height) - var(--global-options-height))}
+.pageContent.workspaceFullBleed{height:calc(100vh - var(--topbar-height) - var(--global-options-height))!important}
+.tableWorkspaceStandalone,.codeWorkspacePage{height:100%!important;min-height:0!important}.tableauWorkspace.exploreWorkspace{height:calc(100% - 44px)!important;min-height:0!important}.dashboardLikeModelWorkspace{height:calc(100% - 44px)!important}.powerDashboardStudio{min-height:100%!important;border:0!important;border-radius:0!important}.powerDashboardTopbar{top:calc(var(--topbar-height,64px) + var(--global-options-height))}.ovBuilderPage,.operationsWorkspacePage{width:100%;height:100%;min-height:0;background:#fff}.ovBuilderPage{overflow:hidden}.ovPreviewStudio{height:100%!important}.operationsWorkspacePage{display:flex;flex-direction:column;overflow:hidden}.operationsWorkspaceBody{flex:1;min-height:0;overflow:auto;padding:18px 22px 28px;background:#f7f8fa}.operationsIntro{display:flex;justify-content:space-between;align-items:flex-end;margin:0 0 16px}.operationsKicker{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7b8490}.operationsIntro h1{font-size:22px;margin:4px 0}.operationsIntro p{margin:0;color:#707986;font-size:12px}.operationsWorkspaceBody>.card{border:1px solid #e4e8ed;border-radius:8px;box-shadow:none}.ovViewCardClickable{position:relative;cursor:pointer;transition:border-color .12s ease,box-shadow .12s ease,transform .12s ease}.ovViewCardClickable:hover{border-color:#c9d0d9;box-shadow:0 7px 18px rgba(25,31,41,.06);transform:translateY(-1px)}.ovViewCardClickable:focus-visible{outline:2px solid #7b8798;outline-offset:2px}.ovViewCardCopy{min-width:0}.ovCardOpenHint{display:block;margin-top:9px;font-size:10px;font-weight:700;color:#5d6876}.ovCardDelete{position:absolute;right:9px;top:9px;z-index:2}
+.codeWorkspacePage{display:flex!important;flex-direction:column!important;gap:0!important}.codeWorkspacePage>.workspaceCommandBar{flex:0 0 44px}.codeWorkspaceNotebook{position:relative;flex:1!important;padding:0 0 32px!important;background:#f5f7f9!important}.codeWorkspaceNotebook .notebookCell{grid-template-columns:72px minmax(0,1fr)!important;padding:18px 24px 18px 0!important;background:#fff!important}.codeWorkspaceNotebook .notebookPrompt{padding-top:8px;color:#8a929e}.codeWorkspaceNotebook .notebookCellBody{max-width:1180px}.codeWorkspaceNotebook .notebookMeta{min-height:30px;margin-bottom:6px}.codeWorkspaceNotebook .workbenchCodeEditor{min-height:190px!important;background:#fbfcfd!important;border-top:1px solid #eef0f3}.codeToolbarMeta{display:flex;align-items:center;gap:10px;margin-right:4px;font-size:10px;color:#7c8591}.codeToolbarHint{padding-left:10px;border-left:1px solid #dfe3e8}.codeNewBlockButton{height:30px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #d6dce3;border-radius:6px;background:#fff;color:#303844;font-size:11px;font-weight:650;cursor:pointer}.codeNewBlockButton:hover{background:#f4f6f8}.codeEmptyWelcome{width:min(520px,calc(100% - 40px));margin:70px auto;padding:32px;text-align:center;border:1px dashed #d4dae2;border-radius:10px;background:#fff;color:#5f6875}.codeEmptyWelcome .codeEmptyIcon{display:grid;width:42px;height:42px;place-items:center;margin:0 auto 12px;border:1px solid #e1e5ea;border-radius:9px;background:#f7f8fa;color:#3d4653}.codeEmptyWelcome strong{display:block;font-size:15px;color:#2a3038}.codeEmptyWelcome p{margin:7px auto 16px;max-width:390px;font-size:11px;line-height:1.55}.codeEmptyWelcome .button{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:760px){.globalOptionsBar{padding:0 8px}.globalOptionsLabel,.globalWorkspaceName{display:none}.globalOptionsDivider{display:none}.globalOptionsDropdown{position:fixed;left:72px;right:8px;top:calc(var(--topbar-height,64px) + 34px);width:auto}.globalOptionsGrid{grid-template-columns:1fr}.operationsWorkspaceBody{padding:14px}.codeToolbarHint{display:none}}
+.homeOperationalTemplates{margin-top:24px}.homeSectionHeading{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px}.homeSectionHeading span{font-size:9px;font-weight:750;letter-spacing:.09em;color:#89919d}.homeSectionHeading h2{margin:3px 0 0;font-size:16px}.homeSectionHeading>a{font-size:10px;font-weight:700;color:#5f6977;text-decoration:none}.homeTemplateGrid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px}.homeTemplateCard{display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto;column-gap:9px;align-items:center;padding:11px;border:1px solid #e2e6eb;border-radius:8px;background:#fff;color:inherit;text-decoration:none;transition:border-color .12s ease,box-shadow .12s ease,transform .12s ease}.homeTemplateCard:hover{border-color:#cbd2da;box-shadow:0 5px 15px rgba(25,31,41,.05);transform:translateY(-1px)}.homeTemplateIcon{grid-row:1/3;display:grid;width:34px;height:34px;place-items:center;border-radius:7px;background:#f3f5f7;color:#4e5968}.homeTemplateCard strong{font-size:11px}.homeTemplateCard small{font-size:9px;line-height:1.3;color:#7c8591}@media(max-width:1200px){.homeTemplateGrid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.homeTemplateGrid{grid-template-columns:1fr 1fr}}
+
+/* UX v47 — unified studios, collapsible right docks and polished Home actions */
+.analyticsLandingPage{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;background:#fff;overflow:hidden}
+.analyticsLandingBody{flex:1;min-height:0;overflow:auto;padding:18px 22px 28px;background:#f7f8fa}
+.analyticsLandingSection{display:grid;gap:16px}
+.analyticsLandingHeading{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.analyticsLandingHeading h2{margin:0;font-size:15px}.analyticsLandingHeading p{margin:4px 0 0;color:#707986;font-size:11px}
+.analyticsNewCard{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1px solid #d8dde4;border-radius:7px;background:#fff;color:#303844;text-decoration:none;font-size:11px;font-weight:700;box-shadow:0 1px 2px rgba(18,26,33,.03)}
+.analyticsNewCard:hover{background:#f3f5f7;border-color:#c5ccd5}.analyticsAssetCard{text-decoration:none;color:inherit}
+.homeQuickActions{display:flex!important;gap:8px!important}.homeQuickAction{min-width:150px;height:48px;display:flex;align-items:center;gap:9px;padding:0 11px;border:1px solid #dce1e7;border-radius:8px;background:#fff;color:#303844;text-decoration:none;cursor:pointer;text-align:left;box-shadow:0 1px 2px rgba(18,26,33,.03);transition:.12s ease}
+.homeQuickAction:hover{border-color:#c5ccd5;background:#f7f8fa;transform:translateY(-1px)}.homeQuickAction.primary{background:#252b33;color:#fff;border-color:#252b33}.homeQuickAction.primary:hover{background:#171c22}
+.homeQuickIcon{width:28px;height:28px;display:grid;place-items:center;border-radius:6px;background:#f0f2f5;flex:0 0 auto}.homeQuickAction.primary .homeQuickIcon{background:rgba(255,255,255,.12)}.homeQuickAction>span:last-child{display:grid;gap:1px}.homeQuickAction strong{font-size:11px}.homeQuickAction small{font-size:9px;opacity:.65;font-weight:500}
+.panelCollapseButton{width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:5px;background:transparent;color:#737d89;cursor:pointer;font-size:17px;line-height:1}.panelCollapseButton:hover{background:#eef1f4;color:#2f3741}
+.ovRightTabs,.explorePaneHeader{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px;padding:0 9px!important;min-height:40px!important;border-bottom:1px solid #e7eaee;background:#fff}.ovRightTabs strong,.explorePaneHeader strong{font-size:11px;font-weight:700;color:#343c46}.ovRightTabs>span,.explorePaneHeader>span{display:none!important}
+.ovInspectorDock,.ovDataDock,.explorePropertiesPane,.exploreDataPane{background:#fff!important;border-left:1px solid #e5e9ef!important}.sharedDataFieldsPanel{background:#fff!important}.powerFieldSearch{margin:8px!important;border-radius:6px!important}
+.ovBuilderGridV38.inspectorCollapsed .ovInspectorDock{display:none!important}.ovBuilderGridV38.dataCollapsed .ovDataDock{display:none!important}.ovBuilderGridV38.inspectorCollapsed{grid-template-columns:52px minmax(0,1fr) 260px!important}.ovBuilderGridV38.dataCollapsed{grid-template-columns:52px minmax(0,1fr) 250px!important}.ovBuilderGridV38.inspectorCollapsed.dataCollapsed{grid-template-columns:52px minmax(0,1fr)!important}
+.ovCollapsedPanelButton,.analyticsCollapsedPanelButton{position:absolute;z-index:12;top:54px;width:28px;height:96px;padding:0;border:1px solid #dfe4ea;background:#fff;color:#596371;font-size:9px;font-weight:700;letter-spacing:.03em;writing-mode:vertical-rl;cursor:pointer}.ovCollapsedPanelButton:hover,.analyticsCollapsedPanelButton:hover{background:#f4f6f8}.ovBuilderGridV38{position:relative}.ovCollapsedPanelButton.properties{right:30px}.ovCollapsedPanelButton.data{right:0}
+.tableauWorkspace.propertiesCollapsed .explorePropertiesPane{display:none!important}.tableauWorkspace.dataCollapsed .exploreDataPane{display:none!important}.tableauWorkspace.propertiesCollapsed{grid-template-columns:52px minmax(480px,1fr) 260px!important;grid-template-areas:"visuals canvas data"!important}.tableauWorkspace.dataCollapsed{grid-template-columns:52px minmax(480px,1fr) 285px!important;grid-template-areas:"visuals canvas props"!important}.tableauWorkspace.propertiesCollapsed.dataCollapsed{grid-template-columns:52px minmax(480px,1fr)!important;grid-template-areas:"visuals canvas"!important}.analyticsCollapsedPanelButton{top:52px}.analyticsCollapsedPanelButton.properties{right:30px}.analyticsCollapsedPanelButton.data{right:0}.exploreWorkspace{position:relative}.analyticsPanelCollapse{position:absolute!important;right:5px;top:5px;z-index:2}.explorePropertiesTabs{position:relative}
+.operationsWorkspaceBody{padding-top:18px}.operationsWorkspaceBody>.card{margin-top:0}.operationsIntro{display:none!important}
+@media(max-width:900px){.homeQuickActions{width:100%;overflow:auto}.homeQuickAction{min-width:140px}.analyticsLandingBody{padding:14px}.analyticsLandingHeading{align-items:flex-start;flex-direction:column}}
+
+/* UX v48 — simplified landing cards + notebook diagnostics */
+.analyticsLandingBody{padding:18px 22px 28px;background:#f7f8fa}.analyticsSimpleGrid{align-content:start}.analyticsSimpleCard{min-height:112px;background:#fff;padding:18px!important}.analyticsSimpleCard .ovViewCardCopy{padding:0!important}.analyticsSimpleCard h3{margin:7px 34px 0 0;font-size:14px}.analyticsSimpleCard small{font-size:9px;letter-spacing:.08em;color:#7a8491}.analyticsSimpleCard .ovViewPreview,.analyticsSimpleCard p,.analyticsSimpleCard .ovCardOpenHint{display:none!important}
+.operationsWorkspaceBody{padding:18px 22px 28px;background:#f7f8fa}.operationsViewsSection{min-height:100%;background:transparent;border:0;padding:0;margin:0}.operationsViewsSection>.ovViewGrid{align-content:start}.operationsViewsSection .ovViewCardCopy small,.operationsViewsSection .ovCardOpenHint{display:none!important}
+.codeToolbarHint,.scriptShortcutHint,.notebookPrompt,.draftCellActions{display:none!important}.streamlinedNotebookCell{grid-template-columns:1fr!important;padding-left:0!important}.streamlinedNotebookCell .notebookCellBody{grid-column:1!important}.scriptToolbar{min-height:42px;align-items:center}.scriptToolbarEnd{margin-left:auto;display:flex;align-items:center;gap:8px}.notebookExecutionMeta{display:flex;align-items:center;gap:6px;color:#727c89;font-size:10px}.notebookExecutionMeta span{padding:3px 6px;border-radius:4px;background:#f2f4f6}.inlineDelete{position:static!important;width:26px;height:26px;margin:0!important}.unifiedScriptWorkbench.scriptHasError{box-shadow:inset 3px 0 0 #b42318;border-color:#e5a8a3!important}.scriptValidationError{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-top:1px solid #f0c9c5;background:#fff6f5;color:#8f1d15;font-size:11px}.scriptValidationError strong{white-space:nowrap}.dependencyWarning{padding:8px 12px;background:#fff8e6;border-top:1px solid #ead59c;color:#715b1d;font-size:11px}.dependentScriptCell{outline:2px solid #e0b84e;outline-offset:-2px}.scriptUndoBar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 14px;background:#fff8e6;border-bottom:1px solid #ead59c;font-size:11px}.scriptUndoBar button{border:0;background:transparent;text-decoration:underline;font-weight:700;cursor:pointer}.compactAddZone small{display:none!important}.codeWorkspaceNotebook{background:#f7f8fa}.notebookCell{border-left:0!important}.workbenchCodeEditor{background-image:none!important}
+
+
+/* UX v49 — lighter, full-width Code notebook */
+.codeWorkspaceNotebook{background:#fff!important;padding:0 0 24px!important}
+.codeWorkspaceNotebook .streamlinedNotebookCell{padding:10px 14px!important;background:#fff!important;border-bottom:1px solid #eef1f4!important}
+.codeWorkspaceNotebook .streamlinedNotebookCell:hover{background:#fcfcfd!important}
+.codeWorkspaceNotebook .notebookCellBody{width:100%!important;max-width:none!important;margin:0!important}
+.codeWorkspaceNotebook .sharedScriptWorkbench{width:100%!important;background:#fff!important}
+.codeWorkspaceNotebook .scriptToolbar{min-height:38px!important;padding:0 4px!important;border-bottom:1px solid #f0f2f4!important}
+.codeWorkspaceNotebook .workbenchCodeEditor{width:100%!important;min-height:220px!important;padding:14px 16px!important;background:#fff!important;border:0!important;resize:vertical!important;line-height:1.6!important}
+.codeWorkspaceNotebook .notebookExecutionMeta span{background:#f6f7f8!important;color:#69717d!important}
+.codeWorkspaceNotebook .compactAddZone{margin:10px 14px!important;border:1px dashed #dfe3e8!important;background:#fff!important}
+.codeWorkspaceNotebook .compactAddZone:hover{background:#fafbfc!important}
+
+
+/* UX v50 — unified Analytics / Operations libraries */
+.workspaceLibraryGrid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;align-content:start}
+.workspaceLibraryCard{min-height:104px!important;background:#fff!important;border:1px solid #e3e7ec!important;border-radius:10px!important;box-shadow:none!important;overflow:hidden!important;padding:16px!important;display:flex!important;align-items:flex-start!important;position:relative}
+.workspaceLibraryCard:hover{border-color:#c5ccd5!important;box-shadow:0 4px 12px rgba(24,32,43,.05)!important;transform:translateY(-1px)}
+.workspaceLibraryCard .ovViewCardCopy{padding:0!important;display:block!important;width:100%;min-width:0}
+.workspaceLibraryCard .ovViewCardCopy small{display:block!important;margin:0 36px 7px 0;font-size:9px!important;font-weight:700;letter-spacing:.09em;color:#7b8490;text-transform:uppercase}
+.workspaceLibraryCard .ovViewCardCopy h3{margin:0 36px 5px 0!important;font-size:14px!important;font-weight:650;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workspaceLibraryCard .ovViewCardCopy p{display:block!important;margin:0 36px 0 0!important;color:#7b8490!important;font-size:11px!important;line-height:1.4}
+.workspaceLibraryCard .ovViewPreview{display:none!important}
+.workspaceLibraryCard .ovCardDelete{right:8px;top:8px;width:28px;height:28px;border-radius:6px;font-size:18px;line-height:1}
+.analyticsLandingBody,.operationsWorkspaceBody{padding:18px 22px 28px;background:#f7f8fa}
+
+
+/* UX v51 — Colab-like adaptive code cells */
+.codeWorkspaceNotebook{padding:8px 0 24px!important}
+.codeWorkspaceNotebook .streamlinedNotebookCell{display:grid!important;grid-template-columns:64px minmax(0,1fr)!important;align-items:start!important;width:100%!important;padding:8px 24px 8px 8px!important;box-sizing:border-box!important;border-bottom:0!important}
+.codeWorkspaceNotebook .notebookPromptVisible{grid-column:1;grid-row:1;align-self:start;padding:45px 10px 0 0;text-align:right;color:#667085;font:600 11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:nowrap}
+.codeWorkspaceNotebook .notebookCellBody{grid-column:2;grid-row:1;width:100%!important;min-width:0!important}
+.codeWorkspaceNotebook .sharedScriptWorkbench{border:1px solid #e4e7eb!important;border-radius:6px!important;overflow:hidden!important}
+.codeWorkspaceNotebook .scriptToolbar{min-height:36px!important}
+.codeWorkspaceNotebook .workbenchCodeEditor{display:block!important;box-sizing:border-box!important;height:26px;min-height:26px!important;max-height:none!important;padding:4px 12px!important;resize:none!important;overflow:hidden!important;font:13px/18px ui-monospace,SFMono-Regular,Consolas,monospace!important}
+.codeWorkspaceNotebook .scriptValidationError,.codeWorkspaceNotebook .dependencyWarning{margin:0!important}
+@media(max-width:720px){.codeWorkspaceNotebook .streamlinedNotebookCell{grid-template-columns:48px minmax(0,1fr)!important;padding-right:12px!important}.codeWorkspaceNotebook .notebookPromptVisible{padding-right:7px}}
+
+/* UX v52 — Colab-like Code cells: full width, compact auto-height */
+.codeWorkspaceNotebook{
+  display:block!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  padding:10px 18px 28px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  background:#fff!important;
+}
+.codeWorkspaceNotebook .streamlinedNotebookCell{
+  display:flex!important;
+  align-items:flex-start!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  box-sizing:border-box!important;
+  margin:0 0 10px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+}
+.codeWorkspaceNotebook .notebookPromptVisible{
+  display:block!important;
+  flex:0 0 58px!important;
+  width:58px!important;
+  box-sizing:border-box!important;
+  padding:43px 10px 0 0!important;
+  text-align:right!important;
+  color:#6b7280!important;
+  font:500 11px/18px ui-monospace,SFMono-Regular,Consolas,monospace!important;
+  white-space:nowrap!important;
+}
+.codeWorkspaceNotebook .notebookCellBody{
+  display:block!important;
+  flex:1 1 auto!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  margin:0!important;
+}
+.codeWorkspaceNotebook .sharedScriptWorkbench{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  border:1px solid #e2e6ea!important;
+  border-radius:6px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+.codeWorkspaceNotebook .scriptToolbar{
+  display:flex!important;
+  width:100%!important;
+  min-height:36px!important;
+  height:36px!important;
+  box-sizing:border-box!important;
+  padding:3px 6px!important;
+  border-bottom:1px solid #eef1f4!important;
+  background:#fff!important;
+}
+.codeWorkspaceNotebook .workbenchCodeEditor{
+  display:block!important;
+  width:100%!important;
+  height:26px;
+  min-height:26px!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+  padding:4px 12px!important;
+  overflow:hidden!important;
+  resize:none!important;
+  border:0!important;
+  outline:0!important;
+  background:#fff!important;
+  font:13px/18px ui-monospace,SFMono-Regular,Consolas,monospace!important;
+}
+.codeWorkspaceNotebook .compactAddZone{
+  width:calc(100% - 58px)!important;
+  box-sizing:border-box!important;
+  margin:4px 0 0 58px!important;
+}
+@media(max-width:720px){
+  .codeWorkspaceNotebook{padding-left:10px!important;padding-right:10px!important}
+  .codeWorkspaceNotebook .notebookPromptVisible{flex-basis:46px!important;width:46px!important;padding-right:7px!important}
+  .codeWorkspaceNotebook .compactAddZone{width:calc(100% - 46px)!important;margin-left:46px!important}
+}
+
+/* UX v53 — single-line code cells + unified Platform settings */
+.sharedScriptWorkbench .workbenchCodeEditor,
+.compactScriptWorkbench .workbenchCodeEditor,
+.workspaceCodeRegion .workbenchCodeEditor,
+.analyticsPropertiesCode .workbenchCodeEditor,
+.analyticsWideCode .workbenchCodeEditor,
+.modelCanvasCodeDock .workbenchCodeEditor,
+.codeWorkspaceNotebook .workbenchCodeEditor{
+  box-sizing:border-box!important;
+  height:26px;
+  min-height:26px!important;
+  max-height:none!important;
+  padding:4px 12px!important;
+  line-height:18px!important;
+  overflow:hidden!important;
+  resize:none!important;
+}
+.platformSettingsContent{padding:0!important;background:#f7f8fa!important;overflow:auto!important}
+.platformSettingsContent>.pageStack,
+.platformSettingsContent>.platformSettingsPage{
+  width:100%!important;max-width:none!important;min-height:100%!important;
+  margin:0!important;padding:20px 24px 36px!important;gap:16px!important;box-sizing:border-box!important;
+}
+.platformSettingsContent .pageHeader{margin:0!important;padding:0 0 14px!important;border-bottom:1px solid #e6e9ed!important}
+.platformSettingsContent .pageHeader h1{margin:0!important;font-size:20px!important;line-height:1.25!important;letter-spacing:-.02em!important}
+.platformSettingsContent .eyebrow{margin:0 0 4px!important;color:#7a8491!important;font-size:10px!important;font-weight:700!important;letter-spacing:.06em!important;text-transform:uppercase!important}
+.platformSettingsContent .card{border:1px solid #e5e8ec!important;border-radius:8px!important;box-shadow:none!important;background:#fff!important}
+.platformSettingsContent .cardHeader{padding:12px 14px!important;border-bottom:1px solid #edf0f2!important}
+.platformSettingsContent .cardHeader h2{font-size:13px!important;margin:0!important}
+.platformSettingsContent .tableWrap,.platformSettingsContent .dataTableWrap{border:0!important;border-radius:0!important}
+.platformSettingsContent .dataTable th{background:#fafbfc!important;color:#667085!important;font-size:10px!important;text-transform:uppercase!important;letter-spacing:.035em!important}
+.platformSettingsContent .dataTable td{background:#fff!important}
+.platformSettingsContent .button{box-shadow:none!important}
+.platformSettingsContent .tabBar,.platformSettingsContent .manageTabs{background:transparent!important;box-shadow:none!important}
+.importExportPage .card{overflow:hidden!important}
+.importExportPage .pageHeader{display:flex!important;align-items:center!important;min-height:38px!important}
+@media(max-width:800px){.platformSettingsContent>.pageStack,.platformSettingsContent>.platformSettingsPage{padding:14px 12px 28px!important}}
+
+/* UX v54 — unified Platform Settings headings */
+.platformSettingsContent .platformSettingsHeader{
+  min-height:44px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;
+  margin:0!important;padding:0 0 12px!important;border-bottom:1px solid #e6e9ed!important;
+}
+.platformSettingsContent .platformSettingsHeader h1,
+.platformSettingsContent .pageHeader h1{
+  margin:0!important;font-size:21px!important;line-height:1.2!important;font-weight:650!important;
+  letter-spacing:-.018em!important;color:var(--text-strong)!important;
+}
+.platformSettingsContent .platformSettingsHeader>div>p:not(.alert){display:none!important}

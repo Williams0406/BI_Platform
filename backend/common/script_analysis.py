@@ -7,7 +7,7 @@ OPT_WORDS=("ortools","pyomo","pulp","cvxpy","gurobi","cplex","scipy.optimize","m
 def analyze_python(code):
     out=[]
     try: tree=ast.parse(code)
-    except SyntaxError as e: return {"valid":False,"error":str(e),"artifacts":[]}
+    except SyntaxError as e: return {"valid":False,"error":f"Line {e.lineno}, column {e.offset}: {e.msg}","line":e.lineno,"column":e.offset,"artifacts":[]}
     for n in ast.walk(tree):
         if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)): out.append({"type":"FUNCTION","name":n.name})
         if isinstance(n,(ast.Assign,ast.AnnAssign)):
@@ -29,8 +29,27 @@ def analyze_python(code):
     if not out and code.strip(): out.append({"type":"TRANSFORMATION","name":"Python transformation"})
     return {"valid":True,"artifacts":dedupe(out)}
 
+def _balanced_error(code):
+    pairs={")":"(", "]":"[", "}":"{"}; stack=[]; quote=None
+    for i,ch in enumerate(code):
+        if ch in ("\'", '"'):
+            if quote==ch: quote=None
+            elif quote is None: quote=ch
+            continue
+        if quote: continue
+        if ch in "([{": stack.append((ch,i))
+        elif ch in ")]}":
+            if not stack or stack[-1][0]!=pairs[ch]: return f"Unexpected {ch} near character {i+1}."
+            stack.pop()
+    if quote: return "Unclosed quoted string."
+    if stack: return f"Unclosed {stack[-1][0]} near character {stack[-1][1]+1}."
+    return None
+
 def analyze_sql(code):
     u=code.upper(); out=[]
+    err=_balanced_error(code)
+    if err: return {"valid":False,"error":err,"artifacts":[]}
+    if code.strip() and not re.search(r"\b(SELECT|WITH|UPDATE|INSERT|DELETE|MERGE|ALTER|CREATE|DROP)\b",u): return {"valid":False,"error":"SQL statement not recognized. Start with SELECT, WITH, or a supported DML/DDL statement.","artifacts":[]}
     if re.search(r"\b(UPDATE|INSERT|DELETE|MERGE|ALTER|CREATE|DROP)\b",u): out.append({"type":"TRANSFORMATION","name":"SQL transformation"})
     if re.search(r"\b(SUM|AVG|COUNT|MIN|MAX)\s*\(",u) and "GROUP BY" not in u:
         m=re.search(r"\bAS\s+([A-Za-z_][\w]*)",code,re.I); out.append({"type":"MEASURE","name":m.group(1) if m else "SQL measure"})
@@ -39,6 +58,8 @@ def analyze_sql(code):
 
 def analyze_dax(code):
     out=[]; text=code.strip()
+    err=_balanced_error(code)
+    if err: return {"valid":False,"error":err,"artifacts":[]}
     m=re.search(r"^\s*MEASURE\s+([^=]+)=",text,re.I|re.M)
     c=re.search(r"^\s*COLUMN\s+([^=]+)=",text,re.I|re.M)
     if m: out.append({"type":"MEASURE","name":m.group(1).strip()})
