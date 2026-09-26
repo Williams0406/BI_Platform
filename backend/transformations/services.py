@@ -189,6 +189,9 @@ def execute_sql_transformation(execution):
             "data_source": source,
             "schema_name": schema_name,
             "table_name": physical_name,
+            # Keep the catalog/display name aligned with the analytical artifact.
+            # Without this, derived outputs appeared as the physical tr_<hash> name.
+            "technical_name": transformation.name,
             "object_type": object_type,
             "primary_key_columns": [],
             "row_version_column": "",

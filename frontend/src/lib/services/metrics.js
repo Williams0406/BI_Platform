@@ -1,4 +1,5 @@
 import api from "@/lib/api/client";
+import {notifyCodeDeletion} from "@/lib/storage/codeDeletion";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 function listParams(workspaceId) {
@@ -60,7 +61,7 @@ export async function updateMetric(id, payload) {
   return response.data;
 }
 export async function deleteMetric(id) {
-  await api.delete(API_ENDPOINTS.metrics.detail(id));
+  return notifyCodeDeletion((await api.delete(API_ENDPOINTS.metrics.detail(id))).data);
 }
 export async function queryMetric(id, payload) {
   const response = await api.post(API_ENDPOINTS.metrics.query(id), payload);

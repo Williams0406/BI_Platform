@@ -5,18 +5,16 @@ export const ROUTES = {
   APP: "/app",
   ORGANIZATIONS: "/app/organizations",
   WORKSPACES: "/app/workspaces",
-  DATA_MODEL: "/app/data-model",
-  RECORDS: "/app/records",
+  DATA_MODEL: "/app/data",
   VIEWS: "/app/views",
   ANALYTICS: "/app/analytics",
-  DASHBOARDS: "/app/dashboards",
   REPORTS: "/app/reports",
   DATA_SCIENCE: "/app/data-science",
   OPTIMIZATION: "/app/optimization",
   IMPORT_EXPORT: "/app/import-export",
   GOVERNANCE: "/app/governance",
-  CUSTOMER_GATEWAY: "/app/customer-gateway",
   OPERATIONS: "/app/operations",
+  CUSTOMER_GATEWAY: "/app/customer-gateway",
 };
 
 export const PUBLIC_ROUTES = [ROUTES.LOGIN, ROUTES.REGISTER];

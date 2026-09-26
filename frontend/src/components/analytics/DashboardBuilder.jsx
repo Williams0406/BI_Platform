@@ -1,5 +1,6 @@
 "use client";
 import SharedDataPanel from "@/components/data/SharedDataPanel";
+import {useMeasureSelection} from "@/lib/hooks/useMeasureSelection";
 import ScriptWorkbench from "@/components/data/ScriptWorkbench";
 
 import Link from "next/link";
@@ -28,9 +29,10 @@ import {
   createSemanticModel,
   listMetrics,
   listSemanticModels,
+  updateMetric,
 } from "@/lib/services/metrics";
 import { getApiErrorMessage } from "@/lib/utils/errors";
-import {createScriptBlock} from "@/lib/services/scripts";
+import {analyzeScript,createScriptBlock,updateScriptBlock} from "@/lib/services/scripts";
 import { getAccessToken } from "@/lib/auth/tokens";
 
 const COLS = 12;
@@ -70,15 +72,16 @@ function pos(value, index = 0) {
     h: clamp(Number(p.h) || 4, 2, 12),
   };
 }
-function nextPosition(items) {
-  if (!items.length) return { x: 0, y: 0, w: 6, h: 4 };
+function nextPosition(items,type) {
+  const size=type==="KPI"?{w:3,h:2}:["PIE","DONUT","SLICER"].includes(type)?{w:4,h:3}:{w:6,h:3};
+  if (!items.length) return { x: 0, y: 0, ...size };
   const bottom = Math.max(
     ...items.map((item, index) => {
       const p = pos(item.position, index);
       return p.y + p.h;
     })
   );
-  return { x: 0, y: bottom, w: 6, h: 4 };
+  return { x: 0, y: bottom, ...size };
 }
 function intersectFields(tables) {
   if (!tables.length) return [];
@@ -121,6 +124,8 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
   const [activeTableId, setActiveTableId] = useState("");
   const [measureLanguage, setMeasureLanguage] = useState("DAX");
   const [measureCode, setMeasureCode] = useState("");
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [editingMeasureId,setEditingMeasureId]=useMeasureSelection(measureCode,setMeasureCode);
   const [semanticBusy, setSemanticBusy] = useState(false);
   const [dataset, setDataset] = useState(null);
   const [commonFields, setCommonFields] = useState([]);
@@ -382,6 +387,7 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
 
   async function assignVisualBinding(slot, payload, aggregation = null) {
     if (!selectedItem || !selectedChart || !payload) return;
+    if(payload.kind === "measure" && slot !== "slicer") slot = "value";
     setSaving(true);
     setError("");
     try {
@@ -465,17 +471,53 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
     setMeasureCode((current) => `${current}${current && !current.endsWith("\n") ? " " : ""}${token}`);
   }
 
+  function parseMeasureDefinition(raw, language) {
+    const source = String(raw || "").trim();
+    if (language !== "DAX") return { name: "", expression: source, source };
+    // Dashboard DAX blocks use the familiar: Measure Name = expression
+    // Only split on the first assignment sign; comparison operators are not
+    // part of the currently supported aggregation-focused DAX subset.
+    const match = source.match(/^\s*([^=\r\n]+?)\s*=\s*([\s\S]+)$/);
+    if (!match) return { name: "", expression: source, source };
+    return { name: match[1].trim(), expression: match[2].trim(), source };
+  }
+
+  function openMeasureInEditor(metric) {
+    if (!metric) return;
+    setEditingMeasureId(metric.id);
+    const language = String(metric.expression_type || "DAX").toUpperCase();
+    setMeasureLanguage(language);
+    const expression = String(metric.expression || "").trim();
+    setMeasureCode(language === "DAX" ? `${metric.name} = ${expression}` : expression);
+    const model = models.find((item) => String(item.id) === String(metric.semantic_model));
+    if (model?.base_table) setActiveTableId(String(model.base_table));
+    setCodeOpen(true);
+    setMessage(`Editing ${metric.name}.`);
+  }
+
   async function saveMeasure() {
-    const expression = measureCode.trim();
+    const sourceCode = measureCode.trim();
     if (!activeTable) { setError("Select a table in the Data pane before creating a measure."); return; }
-    if (!expression) { setError("Write the measure expression first."); return; }
+    if (!sourceCode) { setError("Write the measure expression first."); return; }
+    const parsed = parseMeasureDefinition(sourceCode, measureLanguage);
     const stamp = new Date().toLocaleString([], {year:"numeric",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
-    const name = `${measureLanguage} · ${activeTable.table_name} · ${stamp}`;
+    const name = parsed.name || `${measureLanguage} · ${activeTable.table_name} · ${stamp}`;
     setSemanticBusy(true);
     setError("");
+    let scriptBlock = null;
     try {
+      // Validate syntax before persisting anything in Code. A rejected block
+      // remains in the Analytics editor so the user can correct it.
+      const analysis = await analyzeScript(measureLanguage, sourceCode);
+      if (analysis?.valid === false) throw new Error(analysis?.error || "The code block is not valid.");
+
       const model = await ensureSemanticModel(activeTable.id);
-      const createdMetric = await createMetric({
+      // Metric names are unique across the workspace, not only inside the
+      // current semantic model. Reuse/update an existing measure by name.
+      const existing = metrics.find((metric) =>
+        String(metric.name || "").trim().toLowerCase() === name.toLowerCase()
+      );
+      const payload = {
         workspace: workspaceId,
         semantic_model: model.id,
         name,
@@ -483,18 +525,36 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
         expression_type: measureLanguage,
         source_field: null,
         aggregation: "NONE",
-        expression,
+        expression: parsed.expression,
         format_type: "NUMBER",
         unit: "",
         decimal_places: 2,
         enabled: true,
         cache_ttl_seconds: 60,
+      };
+      // The metric API validates the expression (including DAX field names)
+      // before we create the persistent Code block.
+      const createdMetric = existing
+        ? await updateMetric(existing.id, payload)
+        : await createMetric(payload);
+
+      scriptBlock = await createScriptBlock({
+        workspace: workspaceId,
+        name,
+        language: measureLanguage,
+        purpose: "MEASURE",
+        code: sourceCode,
+        context: {table_id:activeTable.id,table_name:activeTable.table_name,dashboard_id:dashboardId,section:"analytics"},
+        linked_object_type: "METRIC",
+        linked_object_id: createdMetric.id,
+        status: "APPLIED",
       });
-      await createScriptBlock({workspace:workspaceId,name,language:measureLanguage,purpose:"",code:expression,context:{table_id:activeTable.id,table_name:activeTable.table_name,dashboard_id:dashboardId},linked_object_type:"METRIC",linked_object_id:createdMetric.id,status:"APPLIED"});
       setMeasureCode("");
       await load({ quiet: true });
       setMessage(`Measure ${name} created.`);
     } catch (e) {
+      // Invalid measures are not persisted in Code. Keep the text in the
+      // Analytics editor and show the validation/API error for correction.
       setError(getApiErrorMessage(e));
     } finally {
       setSemanticBusy(false);
@@ -537,7 +597,7 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
         dashboard: dashboardId,
         chart: chart.id,
         title_override: "",
-        position: nextPosition(pageItems),
+        position: nextPosition(pageItems,type),
         config_override: { page_id: effectivePageId, visual_type: type, style: DEFAULT_STYLE, bindings: {} },
       });
       await load({ quiet: true });
@@ -722,7 +782,7 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
   }
 
   function startGesture(e, item, type) {
-    if (!editMode || !canWrite) return;
+    if (!editMode || !canWrite || e.button!==0) return;
     e.preventDefault();
     e.stopPropagation();
     const el = canvasRef.current;
@@ -828,8 +888,9 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
       {error && <Alert type="error">{error}</Alert>}
       {message && <div className="dashboardToast" onAnimationEnd={() => setMessage("")}>{message}</div>}
 
-      {editMode && canWrite && (
-        <ScriptWorkbench
+      {editMode && canWrite && <button type="button" className="button secondaryButton smallButton" onClick={()=>setCodeOpen(value=>!value)}>{codeOpen?"Hide code":"Show code"}</button>}
+      {editMode && canWrite && codeOpen && (
+        <ScriptWorkbench metricId={editingMeasureId}
           language={measureLanguage}
           onLanguage={setMeasureLanguage}
           code={measureCode}
@@ -960,9 +1021,11 @@ export default function DashboardBuilder({ dashboardId, workspaceId, canWrite, d
                     activeTableId={activeTableId}
                     onTable={selectTable}
                     onField={insertMeasureField}
+                    onMeasure={openMeasureInEditor}
                     draggable
                     className="powerTableDataPane"
                     onMeasureDeleted={(id)=>setMetrics(current=>current.filter(metric=>String(metric.id)!==String(id)))}
+                    allowMeasureDelete={canWrite}
                   />
                 </section>
               </>
@@ -1142,7 +1205,7 @@ function LegacyDataFieldsPanel({ tables, bindings, models, metrics, activeTableI
                     onDragStart={(event) => beginDrag(event, { kind: "field", tableId: table.id, fieldId: field.id, fieldName: field.name, label: field.business_name || field.name, logicalType: field.logical_type })}
                     onClick={() => onInsertField(table, field)}
                   >
-                    <span className="fieldTypeGlyph">{String(field.logical_type || "").toUpperCase().match(/NUMBER|INTEGER|DECIMAL|FLOAT/) ? "#" : "◫"}</span><span>{field.business_name || field.name}</span><span className="dragDots">⋮⋮</span>
+                    <span className="fieldTypeGlyph">{String(field.logical_type || "").toUpperCase().match(/NUMBER|INTEGER|DECIMAL|FLOAT/) ? "#" : "◫"}</span><span>{field.business_name || field.name}</span>
                   </button>
                 ))}
               </div>
@@ -1157,7 +1220,7 @@ function LegacyDataFieldsPanel({ tables, bindings, models, metrics, activeTableI
                     onDragStart={(event) => beginDrag(event, { kind: "measure", metricId: metric.id, tableId: table.id, semanticModelId: metric.semantic_model, label: metric.name })}
                     title="Drag into Values"
                   >
-                    <span className="measureSigma">∑</span><span>{metric.name}</span><small>{metric.expression_type}</small><span className="dragDots">⋮⋮</span>
+                    <span className="measureSigma">∑</span><span>{metric.name}</span><small>{metric.expression_type}</small>
                   </button>
                 )) : <span className="treeEmptyLabel">No measures yet</span>}
               </div>

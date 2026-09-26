@@ -1,4 +1,5 @@
 from celery import current_app
+from django.conf import settings
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -55,7 +56,8 @@ class ExecutionViewSet(viewsets.ReadOnlyModelViewSet):
         if execution.celery_task_id:
             current_app.control.revoke(
                 execution.celery_task_id,
-                terminate=False,
+                terminate=bool(getattr(settings, "EXECUTION_CANCEL_TERMINATE", False)),
+                signal=getattr(settings, "EXECUTION_CANCEL_SIGNAL", "SIGTERM"),
             )
 
         changed = request_cancel(execution)

@@ -56,6 +56,8 @@ class PythonEnvironment(models.Model):
     version=models.PositiveIntegerField(default=1)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=["workspace"],name="unique_python_environment_per_workspace")]
 
 class EnvironmentPackage(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
@@ -64,5 +66,8 @@ class EnvironmentPackage(models.Model):
     version_spec=models.CharField(max_length=80,blank=True)
     status=models.CharField(max_length=20,default="REQUESTED")
     source=models.CharField(max_length=20,default="PYPI")
+    installed_version=models.CharField(max_length=80,blank=True,default="")
+    log=models.TextField(blank=True,default="")
     created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
     class Meta: unique_together=[("environment","name")]

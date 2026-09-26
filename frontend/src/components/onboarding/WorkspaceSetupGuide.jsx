@@ -143,7 +143,7 @@ export default function WorkspaceSetupGuide({
     </article>)}</div>
     <div className="workspaceGuideFooter">
       <span>Progress is inferred from real workspace objects, not manually checked tasks.</span>
-      {variant==="compact"?<><Link href="/app/get-started">Open full guide</Link><button type="button" onClick={hide}>Hide guide</button></>:hidden?<button type="button" onClick={restore}>Show guide on Home again</button>:null}
+      {variant==="compact"?<><button type="button" onClick={hide}>Hide guide</button></>:hidden?<button type="button" onClick={restore}>Show guide on Home again</button>:null}
     </div>
   </section>;
 }

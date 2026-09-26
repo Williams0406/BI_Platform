@@ -116,6 +116,19 @@ def request_cancel(execution):
     return True
 
 
+
+class ExecutionCancelled(RuntimeError):
+    """Raised cooperatively when an execution has been cancelled."""
+
+
+def ensure_not_cancelled(execution):
+    """Refresh status and stop a long-running service at safe checkpoints."""
+    execution.refresh_from_db(fields=["status"])
+    if execution.status == Execution.Status.CANCELLED:
+        raise ExecutionCancelled("Execution cancelled by user.")
+    return execution
+
+
 def emit_event(execution, event_type, payload=None, family="EXECUTION"):
     """Persist one normalized UER event with a monotonic sequence per execution."""
     from .models import ExecutionEvent

@@ -2751,7 +2751,7 @@ textarea{min-height:88px}
 .sharedScriptWorkbench .workbenchCodeEditor{min-height:180px}
 .tableDataHeaderPagerOnly{justify-content:flex-end!important;min-height:42px}
 .sharedMeasureRow{position:relative;display:flex;align-items:center;min-width:0}
-.sharedMeasureRow>.powerDraggableMeasure{flex:1;min-width:0;padding-right:30px!important}
+.sharedMeasureRow>.powerDraggableMeasure{flex:1;min-width:0;padding-right:8px!important}
 .measureDeleteButton{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:22px;height:22px;border:0;border-radius:4px;background:transparent;color:var(--text-secondary);font-size:17px;line-height:20px;opacity:0;pointer-events:none;cursor:pointer}
 .sharedMeasureRow:hover .measureDeleteButton,.sharedMeasureRow:focus-within .measureDeleteButton{opacity:1;pointer-events:auto}
 .measureDeleteButton:hover{background:#f3f4f6;color:#b42318}
@@ -3296,3 +3296,264 @@ textarea{min-height:88px}
   letter-spacing:-.018em!important;color:var(--text-strong)!important;
 }
 .platformSettingsContent .platformSettingsHeader>div>p:not(.alert){display:none!important}
+
+/* Analytics UX V59 — viewport tooltip and direct dashboard save */
+.analyticsVisualRail button::after{display:none!important}
+.analyticsVisualTooltip{position:fixed;z-index:5000;transform:translateY(-50%);pointer-events:none;white-space:nowrap;padding:6px 8px;border:1px solid var(--border-color,#dfe4ea);border-radius:6px;background:#fff;color:var(--text,#18222c);box-shadow:0 6px 18px rgba(18,26,33,.14);font-size:11px;font-weight:600;line-height:1.2}
+
+/* Analytics reusable measure code blocks */
+.analyticsSavedCodeBlocks{display:flex;gap:8px;overflow-x:auto;padding:0 0 8px;margin-bottom:8px}
+.analyticsSavedCodeBlock{min-width:210px;max-width:320px;text-align:left;border:1px solid var(--border,#d9dee5);background:var(--surface,#fff);border-radius:8px;padding:8px 10px;display:grid;gap:3px;cursor:pointer}
+.analyticsSavedCodeBlock.active{outline:2px solid currentColor;outline-offset:-2px}
+.analyticsSavedCodeBlock>span{font-size:10px;font-weight:700;opacity:.6;text-transform:uppercase}
+.analyticsSavedCodeBlock>strong{font-size:12px}
+.analyticsSavedCodeBlock>code{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.72}
+
+/* Analytics canvas: compact visuals and gray space around the report sheet. */
+.sharedMeasureRow{display:flex;gap:2px}
+.sharedMeasureRow>.measureDeleteButton{position:static;transform:none;flex:0 0 24px;width:24px;height:24px;margin-right:3px;z-index:1}
+.sharedDataFieldsPanel .powerDraggableField[draggable="true"],
+.sharedDataFieldsPanel .powerDraggableMeasure[draggable="true"]{cursor:grab;user-select:none}
+.sharedDataFieldsPanel .powerDraggableField[draggable="true"]:active,
+.sharedDataFieldsPanel .powerDraggableMeasure[draggable="true"]:active{cursor:grabbing}
+.analyticsCanvasViewport{flex:1;min-height:0;overflow:auto;padding:20px;background:#e5e5e5}
+.analyticsReportSurface{position:relative;width:960px;height:600px;flex:none;background:#fff;box-shadow:0 1px 5px #0002}
+.analyticsReportSurface>.analyticsVisualBlock{position:absolute!important;box-sizing:border-box;flex:none!important;min-width:180px;min-height:120px!important;max-width:none;margin:0!important;transform:none!important;overflow:visible!important;touch-action:none}
+.analyticsVisualBlock>div:not(.exploreCanvasEmpty){box-sizing:border-box;width:100%!important;height:100%;min-height:0!important;max-width:none;padding:0!important;border:0!important;box-shadow:none!important;overflow:auto;align-self:stretch}
+.analyticsVisualBlock .svgChartWrap{width:100%;height:100%;min-height:0}
+.analyticsVisualBlock .svgChartWrap svg{display:block;width:100%;height:100%;max-height:100%}
+.analyticsVisualBlock>.kpiVisual{justify-content:center;padding:8px!important;overflow:hidden!important}
+.analyticsVisualBlock .exploreCanvasEmpty{max-width:100%;font-size:11px;padding:4px}
+.analyticsVisualBlock .chartSpecificPlaceholder .emptyVisualIcon{width:32px;height:32px}
+.analyticsVisualBlock .chartSpecificPlaceholder>span:last-child{font-size:10px;line-height:1.3}
+.visualResizeGrip{position:absolute;z-index:8;width:9px;height:9px;padding:0;border:1px solid #477bab;background:#fff;border-radius:1px;touch-action:none}
+.visualResizeGrip:focus-visible{outline:2px solid #174b89;outline-offset:2px}
+.grip-n{top:0;left:calc(50% - 4px);cursor:ns-resize}
+.grip-s{bottom:0;left:calc(50% - 4px);cursor:ns-resize}
+.grip-e{right:0;top:calc(50% - 4px);cursor:ew-resize}
+.grip-w{left:0;top:calc(50% - 4px);cursor:ew-resize}
+.grip-ne{right:0;top:0;cursor:nesw-resize}
+.grip-nw{left:0;top:0;cursor:nwse-resize}
+.grip-se{right:0;bottom:0;cursor:nwse-resize}
+.grip-sw{left:0;bottom:0;cursor:nesw-resize}
+.dashboardResizeHandle{touch-action:none;opacity:0}
+.powerVisualTile:hover .dashboardResizeHandle,.powerVisualTile.selected .dashboardResizeHandle,.dashboardResizeHandle:focus-visible{opacity:1}
+.powerDashboardViewport{background:#e5e5e5!important}
+.analyticsVisualBlock .pieLayout{height:100%;min-height:0;gap:8px}
+.analyticsVisualBlock .pieSvg{height:100%;max-height:100%;width:60%;min-width:0}
+.analyticsVisualBlock .chartLegend{min-width:0;max-height:100%;overflow:auto}
+
+/* UX v64 — one-line auto-growing code workbench across Data, Table and Analytics */
+.sharedScriptWorkbench,
+.compactScriptWorkbench,
+.workspaceCodeRegion .sharedScriptWorkbench,
+.analyticsPropertiesCode .sharedScriptWorkbench,
+.analyticsWideCode .sharedScriptWorkbench,
+.modelCanvasCodeDock .sharedScriptWorkbench,
+.dataWorkbenchMain > .sharedScriptWorkbench {
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  grid-template-rows:auto auto!important;
+  align-self:start!important;
+}
+.sharedScriptWorkbench .workbenchCodeEditor,
+.compactScriptWorkbench .workbenchCodeEditor,
+.workspaceCodeRegion .workbenchCodeEditor,
+.analyticsPropertiesCode .workbenchCodeEditor,
+.analyticsWideCode .workbenchCodeEditor,
+.modelCanvasCodeDock .workbenchCodeEditor,
+.dataWorkbenchMain > .sharedScriptWorkbench .workbenchCodeEditor {
+  display:block!important;
+  box-sizing:border-box!important;
+  height:26px;
+  min-height:26px!important;
+  max-height:none!important;
+  padding:4px 12px!important;
+  line-height:18px!important;
+  overflow:hidden!important;
+  resize:none!important;
+}
+.analyticsWideCode,
+.modelCanvasCodeDock {
+  height:auto!important;
+  min-height:0!important;
+}
+
+/* UX v65 — remove parent layout height reservations around the shared one-line code editor */
+/* Table: the first grid row must follow ScriptWorkbench's real content height instead of reserving 38% of the page. */
+.tableWorkspaceStandalone .dataWorkbenchMain:not(.codeClosed) {
+  grid-template-rows:auto minmax(0,1fr)!important;
+}
+.tableWorkspaceStandalone .dataWorkbenchMain > .sharedScriptWorkbench {
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  align-self:start!important;
+}
+
+/* Analytics (new and saved): code occupies only toolbar + current editor lines. */
+.tableauWorkspace.exploreWorkspace.codeOpen {
+  grid-template-rows:auto minmax(0,1fr)!important;
+  grid-template-areas:"visuals code code data" "visuals canvas props data"!important;
+}
+.tableauWorkspace .analyticsWideCode {
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  align-self:start!important;
+}
+.tableauWorkspace .analyticsWideCode .sharedScriptWorkbench {
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+.tableauWorkspace .analyticsWideCode .workbenchCodeEditor {
+  height:26px;
+  min-height:26px!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+
+/* Data / model: remove legacy 150–230px editor reservation while retaining the dock position. */
+.dashboardLikeModelWorkspace > .modelCanvasCodeDock,
+.workspaceCodeRegion {
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+.dashboardLikeModelWorkspace > .modelCanvasCodeDock .sharedScriptWorkbench,
+.workspaceCodeRegion .sharedScriptWorkbench {
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+.dashboardLikeModelWorkspace > .modelCanvasCodeDock .workbenchCodeEditor,
+.workspaceCodeRegion .workbenchCodeEditor {
+  height:26px;
+  min-height:26px!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+
+/* v70 Data model preview: preview row exists only while a table with readable rows is selected. */
+.dashboardLikeModelWorkspace.sampleClosed{grid-template-rows:minmax(0,1fr)!important;grid-template-areas:"canvas inspector"!important}
+.dashboardLikeModelWorkspace.sampleOpen{grid-template-rows:minmax(0,1fr) minmax(230px,38%)!important;grid-template-areas:"canvas inspector" "sample inspector"!important}
+@media(max-width:900px){
+ .dashboardLikeModelWorkspace.sampleClosed{grid-template-rows:minmax(360px,1fr) auto!important;grid-template-areas:"canvas" "inspector"!important}
+ .dashboardLikeModelWorkspace.sampleOpen{grid-template-rows:minmax(360px,1fr) minmax(230px,38%) auto!important;grid-template-areas:"canvas" "sample" "inspector"!important}
+}
+
+
+/* v72 · unified framed workspace chrome and right-panel language */
+.workspaceCommandBar{
+  border:1px solid var(--border,#dfe4ea)!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  box-shadow:0 1px 2px rgba(18,26,33,.025);
+}
+.sharedScriptWorkbench,
+.analyticsWideCode,
+.modelCanvasCodeDock,
+.workspaceCodeRegion{
+  border:1px solid var(--border,#dfe4ea)!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  box-shadow:0 1px 2px rgba(18,26,33,.025)!important;
+}
+.modelInspector,.dataSemanticPanel,.exploreDataPane,.explorePropertiesPane,.ovInspectorDock,.ovDataDock,.unifiedRightPanel{
+  border:1px solid var(--border,#dfe4ea)!important;
+  background:#fff!important;
+  box-shadow:0 1px 2px rgba(18,26,33,.025);
+}
+.unifiedPanelHeader,.powerPaneHeader.unifiedPanelHeader,.explorePaneHeader.unifiedPanelHeader,.ovRightTabs.unifiedPanelHeader{
+  min-height:44px!important;height:auto!important;padding:6px 9px!important;
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px;
+  border-bottom:1px solid #e7eaee!important;background:#fff!important;
+}
+.unifiedPanelHeader>div{min-width:0;display:flex;flex-direction:column;gap:2px}
+.unifiedPanelHeader>div>strong{font-size:11px!important;font-weight:750;color:#303844}
+.unifiedPanelHeader>div>span{display:block!important;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px!important;font-weight:550!important;color:#7b8490!important;letter-spacing:0!important}
+.panelCollapseButton{flex:0 0 25px;width:25px;height:25px;display:grid;place-items:center;padding:0;border:1px solid #e0e5ea;border-radius:5px;background:#fff;color:#66717f;cursor:pointer}
+.panelCollapseButton:hover{background:#f4f6f8;color:#303844}
+.unifiedCollapsedRailButton{width:32px;height:112px;padding:8px 0;border:0;background:#fff;color:#566170;font-size:9px;font-weight:750;letter-spacing:.04em;writing-mode:vertical-rl;cursor:pointer}
+.unifiedCollapsedRailButton:hover{background:#f4f6f8}
+.dataSemanticPanel.collapsed{display:flex!important;width:34px!important;min-width:34px!important;align-items:flex-start!important;justify-content:flex-start!important;overflow:hidden!important}
+.dataWorkbenchGrid.semanticPanelCollapsed{grid-template-columns:minmax(0,1fr) 34px!important}
+.modelCollapsedRail{grid-area:inspector;display:flex;width:34px;min-width:34px;border:1px solid var(--border,#dfe4ea);background:#fff}
+.dashboardLikeModelWorkspace.modelRightPanelCollapsed{grid-template-columns:minmax(0,1fr) 34px!important}
+.dashboardLikeModelWorkspace.modelRightPanelCollapsed.sampleClosed{grid-template-areas:"canvas inspector"!important}
+.dashboardLikeModelWorkspace.modelRightPanelCollapsed.sampleOpen{grid-template-areas:"canvas inspector" "sample inspector"!important}
+/* Collapsed Analytics/Operations controls form one vertical rail instead of overlapping. */
+.analyticsCollapsedPanelButton,.ovCollapsedPanelButton{right:0!important;width:30px!important;height:92px!important;border-radius:0!important}
+.analyticsCollapsedPanelButton.properties,.ovCollapsedPanelButton.properties{top:52px!important}
+.analyticsCollapsedPanelButton.data,.ovCollapsedPanelButton.data{top:144px!important}
+/* Keep framed code docks visually attached without forcing the old tall editor. */
+.tableauWorkspace .analyticsWideCode,.dashboardLikeModelWorkspace>.modelCanvasCodeDock{border-left:1px solid var(--border,#dfe4ea)!important;border-right:1px solid var(--border,#dfe4ea)!important}
+@media(max-width:900px){
+ .dashboardLikeModelWorkspace.modelRightPanelCollapsed{grid-template-columns:1fr!important;grid-template-rows:minmax(360px,1fr) 34px!important;grid-template-areas:"canvas" "inspector"!important}
+ .modelCollapsedRail{width:100%;height:34px}.modelCollapsedRail .unifiedCollapsedRailButton{width:100%;height:34px;writing-mode:horizontal-tb}
+}
+
+/* UX v73 — notebook insertion, ordering and inline execution output */
+.codeWorkspaceNotebook .notebookSequence{position:relative;width:100%}
+.codeWorkspaceNotebook .codeHoverCell{position:relative;padding-right:42px!important}
+.inlineInsertZone{display:flex;width:100%;height:18px;margin:2px 0 -8px;border:0;background:transparent;align-items:center;justify-content:center;opacity:0;cursor:pointer;transition:opacity .12s ease}
+.inlineInsertZone::before,.inlineInsertZone::after{content:"";height:1px;background:#dfe4ea;flex:1;opacity:.9}
+.inlineInsertZone span{display:grid;place-items:center;width:20px;height:16px;margin:0 7px;border-radius:8px;background:#f4f6f8;color:#596273;font-size:14px;line-height:1}
+.codeHoverCell:hover .inlineInsertZone,.notebookDraftCell:hover .inlineInsertZone,.inlineInsertZone:hover{opacity:1}
+.blockMoveRail{position:absolute;right:6px;top:50%;display:flex;flex-direction:column;gap:2px;transform:translateY(-50%);opacity:0;transition:opacity .12s ease}
+.codeHoverCell:hover .blockMoveRail,.blockMoveRail:hover{opacity:1}
+.blockMoveRail button{display:grid;place-items:center;width:25px;height:25px;padding:0;border:0!important;background:transparent!important;color:#7a8491;cursor:pointer}
+.blockMoveRail button:first-child svg{transform:rotate(180deg)}
+.blockMoveRail button:hover:not(:disabled){color:#202833;background:#f2f4f6!important;border-radius:4px}
+.blockMoveRail button:disabled{opacity:.22;cursor:default}
+.notebookOutput{margin:0;border:1px solid #edf0f3;border-top:0;background:#fff;color:#252b33;font:12px/1.45 ui-monospace,SFMono-Regular,Consolas,monospace}
+.notebookOutputMeta{padding:5px 10px;color:#7a8491;background:#fafbfc;border-bottom:1px solid #edf0f3;font:10px/1.4 system-ui,sans-serif}
+.notebookOutputTableWrap{max-height:280px;overflow:auto}
+.notebookOutput table{width:100%;border-collapse:collapse;font:11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace}
+.notebookOutput th,.notebookOutput td{padding:6px 9px;text-align:left;white-space:nowrap;border-right:1px solid #eef1f4;border-bottom:1px solid #eef1f4}
+.notebookOutput th{position:sticky;top:0;background:#f8f9fb;font-weight:650;z-index:1}
+.notebookStdout{margin:0;padding:9px 11px;white-space:pre-wrap;overflow:auto;background:#fff;border:0;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}
+.packageExplorerIntro{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border:1px solid var(--border,#dfe3e8);border-radius:8px;background:#fff}.packageExplorerIntro span{font-size:12px;color:var(--muted,#667085)}.packageInstallPanel{display:flex;align-items:flex-end;gap:14px;padding:14px;border:1px solid var(--border,#dfe3e8);border-radius:8px;background:#fff}.packageInstallPanel>div{flex:1}.packageInstallPanel p{margin:4px 0 0;color:var(--muted,#667085);font-size:12px}.packageInstallPanel label{display:flex;flex-direction:column;gap:5px;font-size:12px}.packageInstallPanel select{min-width:150px;padding:7px;border:1px solid var(--border,#dfe3e8);border-radius:6px}.packageRowActions{display:flex;align-items:center;gap:8px}.packageLogButton{border:0;background:transparent;font-size:11px;text-decoration:underline;cursor:pointer}.packageInstallLog{margin:0 12px 10px;padding:10px;max-height:220px;overflow:auto;border:1px solid var(--border,#dfe3e8);border-radius:6px;background:#fafafa;font-size:11px;white-space:pre-wrap}.inlineError{padding:9px 11px;border:1px solid #f1b7b7;border-radius:6px;background:#fff7f7;font-size:12px}
+.codeEnvironmentPicker{display:inline-flex;align-items:center;gap:7px;margin-left:12px;font-size:12px;color:var(--muted,#667085)}
+.codeEnvironmentPicker select{height:28px;max-width:240px;border:1px solid #d9dee7;border-radius:6px;background:#fff;padding:0 26px 0 8px;font:inherit;color:#344054}
+.codeEnvironmentMissing{margin-left:12px;font-size:12px;color:#b54708}
+.notebookImageOutput img{display:block;max-width:100%;height:auto;margin:4px 0}
+
+/* v77 Code -> Data publication */
+.pythonPublishBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;border:1px solid var(--border-color,#d9dde5);border-radius:8px;background:var(--surface,#fff);font-size:12px}.pythonPublishBar>span{font-weight:600;margin-right:2px}.pythonPublishBar button{border:1px solid var(--border-color,#d9dde5);background:transparent;border-radius:6px;padding:5px 8px;cursor:pointer;font:inherit}.pythonPublishBar button:hover{background:rgba(127,127,127,.08)}.pythonPublishBar button:disabled{opacity:.55;cursor:default}
+
+/* v82 — Code output alignment + publication feedback */
+.codeWorkspaceNotebook .notebookOutput{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  margin:0!important;
+}
+.codeWorkspaceNotebook .notebookOutputTableWrap{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:0!important;
+  overflow:auto!important;
+}
+.codeWorkspaceNotebook .notebookOutput table{
+  width:max-content!important;
+  min-width:min(100%,680px)!important;
+  margin:0!important;
+  table-layout:auto!important;
+}
+.codeWorkspaceNotebook .notebookOutputMeta,
+.codeWorkspaceNotebook .notebookStdout{width:100%!important;box-sizing:border-box!important;margin:0!important}
+.pythonPublishedBar{background:#fbfcfd!important}
+.pythonPublishedChip{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--border-color,#d9dde5);border-radius:6px;color:#475467;background:#fff;font-size:12px}
+
+/* v83 — unified Python package inventory */
+.pageSubtitle{margin:4px 0 0;color:var(--muted,#667085);font-size:12px}.packageNavButton{min-height:38px;display:inline-flex!important;align-items:center;justify-content:center;white-space:nowrap;padding:0 14px!important}.unifiedPackageSection{padding:0!important;overflow:hidden}.unifiedPackageHeader{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 9px}.unifiedPackageHeader>div{display:flex;flex-direction:column;gap:3px}.unifiedPackageHeader span{font-size:12px;color:var(--muted,#667085)}.unifiedPackageSearch{margin:8px 18px 12px!important;width:calc(100% - 36px)!important}.unifiedPackageList{border-top:1px solid var(--border,#e5e7eb)}.unifiedPackageColumns,.unifiedPackageRow{display:grid;grid-template-columns:minmax(220px,1fr) 120px 140px 130px 72px;align-items:center;gap:12px;padding:0 18px}.unifiedPackageColumns{min-height:34px;background:#fafbfc;color:#667085;font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.02em}.unifiedPackageRow{min-height:44px;border-top:1px solid #eef0f3;font-size:12px}.unifiedPackageEntry:first-of-type .unifiedPackageRow{border-top:0}.unifiedPackageRow strong{font-size:13px}.packageOriginBadge,.packageStatus{display:inline-flex;width:max-content;align-items:center;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:650}.packageOriginBadge.platform{background:#eef2f6;color:#344054}.packageOriginBadge.customer{background:#eef4ff;color:#3538cd}.packageOriginBadge.environment{background:#ecfdf3;color:#027a48}.packageStatus.installed{background:#ecfdf3;color:#027a48}.packageStatus.failed{background:#fff1f0;color:#b42318}.packageStatus.installing,.packageStatus.requested{background:#fff7e6;color:#b54708}.packageStatus.managed,.packageStatus.available{background:#f2f4f7;color:#475467}.packageEmpty{padding:24px 18px;color:#667085;font-size:12px}.runtimePackagesModal{width:min(900px,94vw)!important;max-height:82vh!important;overflow:auto}.runtimePackageHeader{position:sticky;top:0;z-index:4;background:#fff;height:auto!important;min-height:62px!important}.runtimePackageHeaderActions{display:flex;align-items:center;gap:8px}.runtimePackagesModal .unifiedPackageSection{border:0!important;border-radius:0!important}.packageEnvironmentPicker{display:flex;align-items:center;gap:10px;padding:4px 0;font-size:12px}.packageEnvironmentPicker select{height:38px;border:1px solid var(--border,#d9dee7);border-radius:7px;background:#fff;padding:0 30px 0 10px}.packageCatalogSearch{margin:4px 0 0!important;width:100%!important}.packageSearchStatus{color:#667085;padding-left:2px}.packageCatalogRows{display:flex!important;flex-direction:column!important;gap:0!important;padding:0!important;border:1px solid var(--border,#e5e7eb);border-radius:8px;overflow:auto!important;min-height:120px!important;max-height:460px!important}.packageCatalogRows .packageCatalogItem{display:grid!important;grid-template-columns:28px minmax(220px,1fr) 90px 120px 100px;gap:10px;align-items:center;width:100%;min-height:44px;border:0!important;border-bottom:1px solid #eef0f3!important;border-radius:0!important;padding:7px 12px!important}.packageCatalogRows .packageCatalogItem:last-child{border-bottom:0!important}.packageCatalogRows .packageCatalogItem strong{font-size:13px}.packageCatalogSource{font-size:11px;color:#667085}.packageExplorerPage .packageInstallPanel{position:sticky;bottom:8px;box-shadow:0 8px 28px rgba(15,23,42,.08)}
+@media(max-width:760px){.unifiedPackageColumns{display:none}.unifiedPackageRow{grid-template-columns:1fr auto;gap:5px;padding:9px 12px}.unifiedPackageRow>:nth-child(2),.unifiedPackageRow>:nth-child(3),.unifiedPackageRow>:nth-child(4){grid-column:1}.unifiedPackageRow>:last-child{grid-column:2;grid-row:1/4}.packageCatalogRows .packageCatalogItem{grid-template-columns:28px 1fr auto}.packageCatalogRows .packageCatalogItem>:nth-child(3),.packageCatalogRows .packageCatalogItem>:nth-child(5){display:none}.runtimePackageHeader{align-items:flex-start!important;padding:10px 12px!important}.runtimePackageHeaderActions{flex-wrap:wrap;justify-content:flex-end}}
+
+/* Data Science model report v87 */
+.mlWorkspaceReport{border:1px solid var(--border,#e5e7eb);background:var(--surface,#fff);min-height:76vh}.mlHero{display:flex;justify-content:space-between;gap:28px;padding:28px 32px 24px;border-bottom:1px solid var(--border,#e5e7eb)}.mlEyebrow,.mlPanelTitle span{font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;opacity:.5}.mlHero h1{font-size:27px;line-height:1.15;margin:7px 0 12px}.mlHeroTags{display:flex;gap:7px;flex-wrap:wrap}.mlHeroTags>span{font-size:11px;padding:5px 8px;border:1px solid var(--border,#e5e7eb);border-radius:999px}.mlStatus.success{background:rgba(34,197,94,.1)}.mlStatus.failed{background:rgba(239,68,68,.1)}.mlStatus.running,.mlStatus.queued{background:rgba(59,130,246,.1)}.mlHeroMeta{display:flex;gap:26px;align-items:flex-start}.mlHeroMeta>div{display:grid;gap:4px;text-align:right}.mlHeroMeta span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.5}.mlHeroMeta strong{font-size:12px}.mlMetricStrip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-bottom:1px solid var(--border,#e5e7eb)}.mlMetricStrip article{padding:18px 20px;border-right:1px solid var(--border,#e5e7eb)}.mlMetricStrip article:last-child{border-right:0}.mlMetricStrip span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.07em;opacity:.55;margin-bottom:7px}.mlMetricStrip strong{font-size:22px;font-variant-numeric:tabular-nums}.mlReportGrid{display:grid;grid-template-columns:minmax(0,1fr) 270px}.mlReportGrid>main{min-width:0}.mlReportGrid>aside{border-left:1px solid var(--border,#e5e7eb);background:rgba(127,127,127,.018)}.mlPanel{padding:27px 30px;border-bottom:1px solid var(--border,#e5e7eb)}.mlPanelTitle{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px}.mlPanelTitle h2{font-size:18px;margin:5px 0 0}.mlPanelTitle small{font-size:11px;opacity:.5}.mlTwoCols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.mlTwoCols h3,.mlChartCard h3{font-size:12px;margin:0 0 13px}.mlChartCard{border:1px solid var(--border,#e5e7eb);padding:16px;min-height:220px}.mlChartCard h3{display:flex;justify-content:space-between}.mlChartCard em{font-style:normal;font-weight:500;opacity:.55}.mlLineChart{width:100%;height:180px}.mlAxis{stroke:currentColor;opacity:.12}.mlEmpty{padding:24px;font-size:12px;line-height:1.55;opacity:.55;border:1px dashed var(--border,#e5e7eb)}.mlEmptyLarge{min-height:120px;display:flex;align-items:center;justify-content:center}.mlConfusion{display:grid;grid-template-columns:minmax(90px,.7fr) repeat(2,minmax(70px,1fr));gap:6px}.mlConfusionCorner,.mlConfusionLabel{font-size:10px;opacity:.55;display:flex;align-items:center;padding:7px}.mlConfusionRow{display:contents}.mlConfusionCell{min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--border,#e5e7eb);background:rgba(59,130,246,var(--strength));gap:4px}.mlConfusionCell strong{font-size:18px}.mlConfusionCell span{font-size:9px;opacity:.6}.mlBars{display:grid;gap:12px;padding-top:8px}.mlBars>div{display:grid;grid-template-columns:70px 1fr 55px;gap:10px;align-items:center;font-size:11px}.mlBars i{height:8px;background:rgba(127,127,127,.1);overflow:hidden;border-radius:999px}.mlBars b{display:block;height:100%;background:currentColor;opacity:.65;border-radius:999px}.mlBars strong{text-align:right}.mlReportTable{border:1px solid var(--border,#e5e7eb)}.mlReportHead,.mlReportRow{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:10px;padding:10px 13px;align-items:center}.mlReportHead{font-size:9px;text-transform:uppercase;letter-spacing:.07em;opacity:.5;background:rgba(127,127,127,.04)}.mlReportRow{font-size:11px;border-top:1px solid var(--border,#e5e7eb);font-variant-numeric:tabular-nums}.mlSidePanel{padding:22px 20px;border-bottom:1px solid var(--border,#e5e7eb)}.mlSidePanel h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin:0 0 16px}.mlSidePanel dl{margin:0;display:grid;gap:12px}.mlSidePanel dl>div{display:flex;justify-content:space-between;gap:15px}.mlSidePanel dt{font-size:10px;opacity:.5}.mlSidePanel dd{margin:0;font-size:11px;text-align:right;max-width:150px;overflow-wrap:anywhere}.mlMono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.mlRunList{display:grid}.mlRunList>div{display:grid;grid-template-columns:30px 1fr;gap:8px;padding:9px 0;border-top:1px solid var(--border,#e5e7eb)}.mlRunList>div:first-child{border-top:0}.mlRunList>div>span{font-size:10px;opacity:.45}.mlRunList div div{display:grid;gap:3px}.mlRunList strong{font-size:10px}.mlRunList small{font-size:9px;opacity:.5}@media(max-width:1100px){.mlMetricStrip{grid-template-columns:repeat(3,1fr)}.mlReportGrid{grid-template-columns:1fr}.mlReportGrid>aside{border-left:0;border-top:1px solid var(--border,#e5e7eb);display:grid;grid-template-columns:repeat(3,1fr)}.mlSidePanel{border-right:1px solid var(--border,#e5e7eb)}}@media(max-width:760px){.mlHero{flex-direction:column}.mlHeroMeta{width:100%;justify-content:space-between}.mlHeroMeta>div{text-align:left}.mlMetricStrip{grid-template-columns:repeat(2,1fr)}.mlTwoCols{grid-template-columns:1fr}.mlPanel{padding:22px 18px}.mlReportGrid>aside{display:block}.mlConfusion{overflow:auto}.mlReportTable{overflow:auto}.mlReportHead,.mlReportRow{min-width:560px}}

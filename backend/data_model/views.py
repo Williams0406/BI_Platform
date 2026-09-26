@@ -29,6 +29,9 @@ class CatalogTableViewSet(viewsets.ModelViewSet):
             .prefetch_related("fields", "fields__content_rule")
             .distinct()
         )
+        workspace_id = self.request.query_params.get("workspace")
+        if workspace_id:
+            queryset = queryset.filter(data_source__workspace_id=workspace_id)
         source_id = self.request.query_params.get("data_source")
         if source_id:
             queryset = queryset.filter(data_source_id=source_id)
@@ -56,6 +59,27 @@ class CatalogTableViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         table = self.get_object()
+        # Code-generated datasets are platform-owned derived artifacts. Their X
+        # action removes the generated table and its derived Data Science tree
+        # (dataset/model/runs/report) without requiring a DDL grant.
+        from common.generated_outputs import (
+            GeneratedOutputInUseError,
+            delete_script_generated_table,
+            is_script_generated_table,
+        )
+        if is_script_generated_table(table):
+            try:
+                delete_script_generated_table(table)
+            except GeneratedOutputInUseError as exc:
+                return Response(
+                    {
+                        "detail": str(exc),
+                        "code": "GENERATED_DATASET_IN_USE",
+                        "dependencies": exc.dependencies,
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+            return Response(status=status.HTTP_204_NO_CONTENT)
         if table.data_source.mode != "MANAGED":
             return Response({"detail": "Only Platform tables can be physically deleted from Data."}, status=status.HTTP_400_BAD_REQUEST)
         from .managed_services import delete_managed_table

@@ -21,7 +21,7 @@ export async function searchWorkspace(workspaceId, query = "") {
     ["Data asset", "catalog", listDataAssets(workspaceId), (x) => `/app/data-assets/${x.id}`, (x) => x.asset_type || ""],
     ["Operational view", "view", listViews({ workspace: workspaceId }), (x) => `/app/views/${x.id}`, (x) => x.view_type || ""],
     ["Chart", "explore", listCharts(workspaceId), (x) => `/app/analytics/${x.id}`, (x) => x.chart_type || ""],
-    ["Dashboard", "dashboard", listDashboards(workspaceId), (x) => `/app/dashboards/${x.id}`, () => "Dashboard"],
+    ["Dashboard", "dashboard", listDashboards(workspaceId), (x) => `/app/analytics/${x.id}`, () => "Dashboard"],
     ["Report", "report", listReports(workspaceId), (x) => `/app/reports/${x.id}`, () => "Report"],
     ["ML model", "brain", listModels(workspaceId), (x) => `/app/data-science/models/${x.id}`, (x) => x.algorithm || ""],
     ["Optimization", "optimize", listOptimizationModels(workspaceId), (x) => `/app/optimization/${x.id}`, (x) => x.problem_type || ""],

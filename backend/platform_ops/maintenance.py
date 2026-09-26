@@ -23,6 +23,7 @@ def run_maintenance():
     now = timezone.now()
     result = {
         "stale_executions_failed": 0,
+        "stale_queued_executions_failed": 0,
         "audit_logs_deleted": 0,
         "execution_logs_deleted": 0,
         "import_files_deleted": 0,
@@ -39,6 +40,18 @@ def run_maintenance():
         finished_at=now,
         error_type="StaleExecution",
         error_message="Marked failed by production maintenance.",
+    )
+
+    queued_cutoff = now - timedelta(minutes=settings.OPS_STALE_QUEUED_MINUTES)
+    stale_queued = Execution.objects.filter(
+        status=Execution.Status.QUEUED,
+        queued_at__lt=queued_cutoff,
+    )
+    result["stale_queued_executions_failed"] = stale_queued.update(
+        status=Execution.Status.FAILED,
+        finished_at=now,
+        error_type="StaleQueuedExecution",
+        error_message="Queued execution exceeded the production queue age limit.",
     )
 
     for policy in RetentionPolicy.objects.select_related("workspace"):

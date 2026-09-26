@@ -4,19 +4,22 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import AnalyticsFilterBuilder, { normalizeAnalyticsFilters } from "@/components/analytics/AnalyticsFilterBuilder";
+import ResizableVisual, {defaultVisualSize} from "@/components/analytics/ResizableVisual";
 import ChartRenderer from "@/components/analytics/ChartRenderer";
 import Alert from "@/components/ui/Alert";
 import EmptyState from "@/components/ui/EmptyState";
 import Icon from "@/components/ui/Icon";
 import Spinner from "@/components/ui/Spinner";
 import WorkspaceCommandBar from "@/components/data/WorkspaceCommandBar";
+import {createScriptBlock} from "@/lib/services/scripts";
+import {useMeasureSelection} from "@/lib/hooks/useMeasureSelection";
 import ScriptWorkbench from "@/components/data/ScriptWorkbench";
 import SharedDataPanel from "@/components/data/SharedDataPanel";
 import { useWorkspace } from "@/lib/hooks/useWorkspace";
-import { createChart, getChart, getDashboard, listCharts, updateChart } from "@/lib/services/analytics";
+import { createChart, createDashboard, getChart, getDashboard, listCharts, updateChart, updateDashboard } from "@/lib/services/analytics";
 import { getCatalogTable, listCatalogTables } from "@/lib/services/dataModel";
 import { listDataSources } from "@/lib/services/dataSources";
-import { listSemanticModels, queryMetric } from "@/lib/services/metrics";
+import { createDimension, createMetric, createSemanticModel, listSemanticModels, queryMetric, updateMetric } from "@/lib/services/metrics";
 import { getApiErrorMessage } from "@/lib/utils/errors";
 
 const WRITE_ROLES = ["OWNER", "ADMIN", "BUILDER"];
@@ -48,30 +51,30 @@ const CHART_TYPES = [
  ];
 
 const VISUAL_PROPERTY_SLOTS = {
-  KPI: [{ key: "value", label: "Value", kind: "measure", hint: "Measure" }],
-  TABLE: [{ key: "rows", label: "Rows", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "measure", hint: "Measure" }],
-  BAR: [{ key: "category", label: "X-axis / Category", kind: "dimension", hint: "Field" }, { key: "value", label: "Y-axis / Values", kind: "measure", hint: "Measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Field" }],
-  HORIZONTAL_BAR: [{ key: "category", label: "Y-axis / Category", kind: "dimension", hint: "Field" }, { key: "value", label: "X-axis / Values", kind: "measure", hint: "Measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Field" }],
-  STACKED_BAR: [{ key: "category", label: "Axis", kind: "dimension", hint: "Field" }, { key: "value", label: "Values", kind: "measure", hint: "Measure" }, { key: "series", label: "Legend / Stack", kind: "dimension", hint: "Field" }],
-  SIDE_BY_SIDE_BAR: [{ key: "category", label: "Axis", kind: "dimension", hint: "Field" }, { key: "value", label: "Values", kind: "measure", hint: "Measure" }, { key: "series", label: "Legend / Group", kind: "dimension", hint: "Field" }],
-  LINE: [{ key: "x", label: "X-axis", kind: "dimension", hint: "Date or category" }, { key: "y", label: "Y-axis", kind: "measure", hint: "Measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Optional field" }],
-  DUAL_LINE: [{ key: "x", label: "Shared X-axis", kind: "dimension", hint: "Date or category" }, { key: "y", label: "Primary values", kind: "measure", hint: "Measure" }, { key: "series", label: "Series", kind: "dimension", hint: "Optional field" }],
-  AREA: [{ key: "x", label: "X-axis", kind: "dimension", hint: "Date or category" }, { key: "y", label: "Y-axis / Values", kind: "measure", hint: "Measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Optional field" }],
-  PIE: [{ key: "legend", label: "Legend / Category", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "measure", hint: "Measure" }],
-  DONUT: [{ key: "legend", label: "Legend / Category", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "measure", hint: "Measure" }],
-  SCATTER: [{ key: "details", label: "Details", kind: "dimension", hint: "Field" }, { key: "x", label: "X-axis", kind: "measure", hint: "Measure" }, { key: "legend", label: "Legend", kind: "dimension", hint: "Optional field" }],
-  CIRCLE: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "measure", hint: "Measure" }],
-  SIDE_BY_SIDE_CIRCLE: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "measure", hint: "Measure" }, { key: "group", label: "Group", kind: "dimension", hint: "Field" }],
-  HEATMAP: [{ key: "rows", label: "Rows", kind: "dimension", hint: "Field" }, { key: "columns", label: "Columns", kind: "dimension", hint: "Field" }, { key: "color", label: "Color / Value", kind: "measure", hint: "Measure" }],
-  HIGHLIGHT_TABLE: [{ key: "rows", label: "Rows", kind: "dimension", hint: "Field" }, { key: "columns", label: "Columns", kind: "dimension", hint: "Field" }, { key: "color", label: "Color / Value", kind: "measure", hint: "Measure" }],
-  TREEMAP: [{ key: "group", label: "Group", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "measure", hint: "Measure" }, { key: "detail", label: "Details", kind: "dimension", hint: "Optional field" }],
-  PACKED_BUBBLES: [{ key: "group", label: "Group", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "measure", hint: "Measure" }],
-  HISTOGRAM: [{ key: "bins", label: "Bins", kind: "dimension", hint: "Numeric field" }, { key: "frequency", label: "Frequency", kind: "measure", hint: "Measure" }],
-  BOX_PLOT: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "measure", hint: "Measure" }],
-  GANTT: [{ key: "task", label: "Task", kind: "dimension", hint: "Field" }, { key: "duration", label: "Duration", kind: "measure", hint: "Measure" }, { key: "group", label: "Group", kind: "dimension", hint: "Optional field" }],
-  BULLET: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "actual", label: "Actual value", kind: "measure", hint: "Measure" }],
-  SYMBOL_MAP: [{ key: "location", label: "Location", kind: "dimension", hint: "Geographic field" }, { key: "size", label: "Size", kind: "measure", hint: "Measure" }],
-  FILLED_MAP: [{ key: "location", label: "Location", kind: "dimension", hint: "Geographic field" }, { key: "color", label: "Color saturation", kind: "measure", hint: "Measure" }],
+  KPI: [{ key: "value", label: "Value", kind: "value", hint: "Field or measure" }],
+  TABLE: [{ key: "rows", label: "Rows", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "value", hint: "Field or measure" }],
+  BAR: [{ key: "category", label: "X-axis / Category", kind: "dimension", hint: "Field" }, { key: "value", label: "Y-axis / Values", kind: "value", hint: "Field or measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Field" }],
+  HORIZONTAL_BAR: [{ key: "category", label: "Y-axis / Category", kind: "dimension", hint: "Field" }, { key: "value", label: "X-axis / Values", kind: "value", hint: "Field or measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Field" }],
+  STACKED_BAR: [{ key: "category", label: "Axis", kind: "dimension", hint: "Field" }, { key: "value", label: "Values", kind: "value", hint: "Field or measure" }, { key: "series", label: "Legend / Stack", kind: "dimension", hint: "Field" }],
+  SIDE_BY_SIDE_BAR: [{ key: "category", label: "Axis", kind: "dimension", hint: "Field" }, { key: "value", label: "Values", kind: "value", hint: "Field or measure" }, { key: "series", label: "Legend / Group", kind: "dimension", hint: "Field" }],
+  LINE: [{ key: "x", label: "X-axis", kind: "dimension", hint: "Date or category" }, { key: "y", label: "Y-axis", kind: "value", hint: "Field or measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Optional field" }],
+  DUAL_LINE: [{ key: "x", label: "Shared X-axis", kind: "dimension", hint: "Date or category" }, { key: "y", label: "Primary values", kind: "value", hint: "Field or measure" }, { key: "y2", label: "Secondary values", kind: "value", hint: "Field or measure" }, { key: "series", label: "Series", kind: "dimension", hint: "Optional field" }],
+  AREA: [{ key: "x", label: "X-axis", kind: "dimension", hint: "Date or category" }, { key: "y", label: "Y-axis / Values", kind: "value", hint: "Field or measure" }, { key: "series", label: "Legend / Series", kind: "dimension", hint: "Optional field" }],
+  PIE: [{ key: "legend", label: "Legend / Category", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "value", hint: "Field or measure" }],
+  DONUT: [{ key: "legend", label: "Legend / Category", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "value", hint: "Field or measure" }],
+  SCATTER: [{ key: "details", label: "Details", kind: "dimension", hint: "Field" }, { key: "x", label: "X-axis", kind: "value", hint: "Field or measure" }, { key: "y", label: "Y-axis", kind: "value", hint: "Field or measure" }, { key: "legend", label: "Legend", kind: "dimension", hint: "Optional field" }],
+  CIRCLE: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "value", hint: "Field or measure" }],
+  SIDE_BY_SIDE_CIRCLE: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "value", hint: "Field or measure" }, { key: "group", label: "Group", kind: "dimension", hint: "Field" }],
+  HEATMAP: [{ key: "rows", label: "Rows", kind: "dimension", hint: "Field" }, { key: "columns", label: "Columns", kind: "dimension", hint: "Field" }, { key: "color", label: "Color / Value", kind: "value", hint: "Field or measure" }],
+  HIGHLIGHT_TABLE: [{ key: "rows", label: "Rows", kind: "dimension", hint: "Field" }, { key: "columns", label: "Columns", kind: "dimension", hint: "Field" }, { key: "color", label: "Color / Value", kind: "value", hint: "Field or measure" }],
+  TREEMAP: [{ key: "group", label: "Group", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "value", hint: "Field or measure" }, { key: "detail", label: "Details", kind: "dimension", hint: "Optional field" }],
+  PACKED_BUBBLES: [{ key: "group", label: "Group", kind: "dimension", hint: "Field" }, { key: "size", label: "Size", kind: "value", hint: "Field or measure" }],
+  HISTOGRAM: [{ key: "bins", label: "Bins", kind: "dimension", hint: "Numeric field" }, { key: "frequency", label: "Frequency", kind: "value", hint: "Field or measure" }],
+  BOX_PLOT: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "values", label: "Values", kind: "value", hint: "Field or measure" }],
+  GANTT: [{ key: "task", label: "Task", kind: "dimension", hint: "Field" }, { key: "duration", label: "Duration", kind: "value", hint: "Field or measure" }, { key: "group", label: "Group", kind: "dimension", hint: "Optional field" }],
+  BULLET: [{ key: "category", label: "Category", kind: "dimension", hint: "Field" }, { key: "actual", label: "Actual value", kind: "value", hint: "Field or measure" }],
+  SYMBOL_MAP: [{ key: "location", label: "Location", kind: "dimension", hint: "Geographic field" }, { key: "size", label: "Size", kind: "value", hint: "Field or measure" }],
+  FILLED_MAP: [{ key: "location", label: "Location", kind: "dimension", hint: "Geographic field" }, { key: "color", label: "Color saturation", kind: "value", hint: "Field or measure" }],
 };
 
 function listValue(value) {
@@ -156,26 +159,32 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
   const [savedChart, setSavedChart] = useState(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
+  const [savedDashboardId,setSavedDashboardId]=useState(dashboardId || null);
+  const [visualTooltip,setVisualTooltip]=useState(null);
+  const [slotBindings,setSlotBindings]=useState({});
   const [savedOpen, setSavedOpen] = useState(false);
   const [fieldSearch, setFieldSearch] = useState("");
   const [rightTab, setRightTab] = useState("properties");
   const [propertiesOpen,setPropertiesOpen]=useState(true);
   const [dataPanelOpen,setDataPanelOpen]=useState(true);
   const [visualFormat,setVisualFormat]=useState({title:true,subtitle:false,border:true,background:"#ffffff",fontSize:12,titleSize:14,legend:true,legendPosition:"bottom",xAxis:true,yAxis:true,gridlines:true,dataLabels:false,opacity:100,radius:0,shadow:false,padding:16});
+  const [visualSize,setVisualSize]=useState(null);
   const [visualPosition,setVisualPosition]=useState({x:0,y:0});
   const [queryVersion, setQueryVersion] = useState(0);
   const [codeOpen,setCodeOpen]=useState(false);
   const [codeLanguage,setCodeLanguage]=useState("SQL");
   const [code,setCode]=useState("");
+  const [editingMeasureId,setEditingMeasureId]=useMeasureSelection(code,setCode);
+  const [codeBusy,setCodeBusy]=useState(false);
   const [readingView,setReadingView]=useState(false);
   const [visualSelected,setVisualSelected]=useState(false);
   const [reportName,setReportName]=useState("Untitled report");
-  useEffect(()=>{if(!dashboardId)return;let live=true;getDashboard(dashboardId).then(d=>{if(live)setReportName(d?.name||"Untitled dashboard")}).catch(()=>{});return()=>{live=false}},[dashboardId]);
+  useEffect(()=>{if(!dashboardId)return;let live=true;getDashboard(dashboardId).then(d=>{if(live){setReportName(d?.name||"Untitled dashboard");setSavedDashboardId(d?.id||dashboardId)}}).catch(()=>{});return()=>{live=false}},[dashboardId]);
   const [pages,setPages]=useState([{id:"page-1",name:"Page 1",state:null}]);
   const [activePageId,setActivePageId]=useState("page-1");
   const [renamingPageId,setRenamingPageId]=useState(null);
-  const [draggingVisual,setDraggingVisual]=useState(false);
-  const dragOrigin=useRef(null);
+
+
   const autoRunTimer = useRef(null);
 
   const organization = useMemo(
@@ -188,6 +197,8 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
   const dimensions = model?.dimensions || [];
   const metric = metrics.find((item) => item.id === metricId) || null;
   const selectedDimensions = dimensions.filter((item) => dimensionIds.includes(item.id));
+
+  useEffect(()=>{const refresh=(event)=>{if(!event?.detail?.workspace||String(event.detail.workspace)===String(activeWorkspace?.id))loadBase()};window.addEventListener("bi-data-artifacts-changed",refresh);return()=>window.removeEventListener("bi-data-artifacts-changed",refresh)},[activeWorkspace?.id]);
 
   const filteredDimensions = useMemo(() => {
     const q = fieldSearch.trim().toLowerCase();
@@ -211,8 +222,10 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
       ]);
       const nextSources=listValue(sourceData);
       setSources(nextSources);
-      const tableGroups=await Promise.all(nextSources.map((source)=>listCatalogTables(source.id).catch(()=>[])));
-      setTables(tableGroups.flatMap(listValue));
+      // Query the catalog by workspace, not only by the currently returned source list.
+      // Derived SQL outputs are catalog assets too and must be visible immediately in Data.
+      const workspaceTables=await listCatalogTables(null,"",activeWorkspace.id).catch(()=>[]);
+      setTables(listValue(workspaceTables));
       const nextModels = listValue(modelsData).filter((item) => item.enabled !== false);
       setModels(nextModels);
       setCharts(listValue(chartsData));
@@ -220,6 +233,8 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
       let definition = null;
       if (chartId) definition = await getChart(chartId);
       setSavedChart(definition);
+      setVisualSize(definition?.config?.visualSize||null);
+      setVisualPosition(definition?.config?.visualPosition||{x:0,y:0});
 
       const firstModelId = definition
         ? nextModels.find((item) => item.metrics?.some((candidate) => candidate.id === definition.metric))?.id
@@ -287,12 +302,12 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
   }
 
   function currentPageState(){
-    return {chartType,metricId,dimensionIds:[...dimensionIds],visualPosition:{...visualPosition},visualFormat:{...visualFormat},visualSelected};
+    return {chartType,metricId,dimensionIds:[...dimensionIds],slotBindings:{...slotBindings},visualPosition:{...visualPosition},visualSize:visualSize||defaultVisualSize(chartType),visualFormat:{...visualFormat},visualSelected};
   }
 
   function applyPageState(state){
     const next=state||{chartType:"KPI",metricId:"",dimensionIds:[],visualPosition:{x:0,y:0},visualFormat:{title:true,subtitle:false,border:true,background:"#ffffff",fontSize:12,titleSize:14,legend:true,legendPosition:"bottom",xAxis:true,yAxis:true,gridlines:true,dataLabels:false,opacity:100,radius:0,shadow:false,padding:16},visualSelected:false};
-    setChartType(next.chartType||"KPI");setMetricId(next.metricId||"");setDimensionIds(next.dimensionIds||[]);setVisualPosition(next.visualPosition||{x:0,y:0});setVisualFormat(next.visualFormat||{title:true,border:true,background:"#ffffff",fontSize:12});setVisualSelected(Boolean(next.visualSelected));setDataset(null);
+    setVisualSize(next.visualSize||null);setChartType(next.chartType||"KPI");setMetricId(next.metricId||"");setDimensionIds(next.dimensionIds||[]);setSlotBindings(next.slotBindings||{});setVisualPosition(next.visualPosition||{x:0,y:0});setVisualFormat(next.visualFormat||{title:true,border:true,background:"#ffffff",fontSize:12});setVisualSelected(Boolean(next.visualSelected));setDataset(null);
   }
 
   function switchPage(id){
@@ -322,20 +337,303 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
     });
   }
 
-  function handleDrop(value, zone) {
-    if (value.kind === "measure" && zone === "measure") {
-      const nextMetricId=value.metricId || value.id;
-      const owner=models.find((item)=>item.metrics?.some((candidate)=>String(candidate.id)===String(nextMetricId)));
-      if(owner && String(owner.id)!==String(modelId)) setModelId(owner.id);
-      selectMetric(nextMetricId);
+  function dimensionTypeForField(value) {
+    const logical=String(value?.logicalType || value?.logical_type || "").toUpperCase();
+    if (["DATE"].includes(logical)) return "DATE";
+    if (["DATETIME", "DATETIME_TZ", "TIMESTAMP"].includes(logical)) return "DATETIME";
+    if (["INTEGER", "BIGINT", "DECIMAL", "FLOAT", "NUMBER"].includes(logical)) return "NUMBER";
+    if (["TEXT", "STRING"].includes(logical)) return "TEXT";
+    return "CATEGORY";
+  }
+
+  async function ensureFieldDimension(value) {
+    const fieldId=value.fieldId || value.field_id || value.id;
+    const tableId=value.tableId || value.table_id || table?.id;
+    if(!fieldId || !tableId || !activeWorkspace?.id) return null;
+
+    let owner=models.find((item)=>String(item.base_table)===String(tableId));
+    if(!owner){
+      const sourceTable=tables.find((item)=>String(item.id)===String(tableId));
+      const baseName=sourceTable?.technical_name || sourceTable?.table_name || "Table";
+      owner=await createSemanticModel({
+        workspace:activeWorkspace.id,
+        name:`${baseName} model`,
+        description:"Created automatically from Analytics while assigning fields to a visual.",
+        base_table:tableId,
+        enabled:true,
+      });
     }
-    if ((value.kind === "dimension" || value.kind === "field") && zone === "dimension") {
-      const candidate=dimensions.find((item)=>String(item.id)===String(value.id)||String(item.field)===String(value.fieldId)||String(item.field_id)===String(value.fieldId)||String(item.field_name||item.name)===String(value.fieldName));
-      if(candidate && !dimensionIds.includes(candidate.id)) {
-        setDimensionIds((current) => [...current, candidate.id]);
-        if (chartType === "KPI") setChartType("BAR");
+
+    let candidate=(owner.dimensions || []).find((item)=>String(item.field)===String(fieldId));
+    if(!candidate){
+      candidate=await createDimension({
+        semantic_model:owner.id,
+        field:fieldId,
+        name:value.label || value.fieldName || "Field",
+        dimension_type:dimensionTypeForField(value),
+        format:"",
+        hierarchy:[],
+        sort_order:(owner.dimensions || []).length,
+      });
+    }
+
+    const refreshed=listValue(await listSemanticModels(activeWorkspace.id)).filter((item)=>item.enabled!==false);
+    setModels(refreshed);
+    const refreshedOwner=refreshed.find((item)=>String(item.id)===String(owner.id)) || owner;
+    setModelId(refreshedOwner.id);
+    return (refreshedOwner.dimensions || []).find((item)=>String(item.id)===String(candidate.id)) || candidate;
+  }
+
+  function isNumericFieldPayload(value) {
+    const logical=String(value?.logicalType || value?.logical_type || "").toUpperCase();
+    return ["INTEGER","BIGINT","SMALLINT","DECIMAL","FLOAT","DOUBLE","NUMBER","NUMERIC"].some((token)=>logical.includes(token));
+  }
+
+  function propertySlot(slotKey) {
+    return (VISUAL_PROPERTY_SLOTS[chartType] || VISUAL_PROPERTY_SLOTS.BAR).find((slot)=>slot.key===slotKey) || null;
+  }
+
+  function isCategoricalSlot(slotKey) {
+    const slot=propertySlot(slotKey);
+    return slot?.kind === "dimension";
+  }
+
+  function fieldAggregationForSlot(value, slotKey) {
+    // Raw numeric fields behave like Power BI implicit measures in Values.
+    // Text/boolean fields are still useful in Values as a row count.
+    if (isNumericFieldPayload(value)) return "SUM";
+    return "COUNT";
+  }
+
+  async function createImplicitFieldMetric(value, slotKey) {
+    const fieldId=value.fieldId || value.field_id || value.id;
+    const tableId=value.tableId || value.table_id || table?.id;
+    const sourceTable=tables.find((item)=>String(item.id)===String(tableId));
+    const field=(sourceTable?.fields || []).find((item)=>String(item.id)===String(fieldId));
+    if (!sourceTable || !field) throw new Error("The dropped field could not be resolved in Data.");
+    let owner=models.find((item)=>String(item.base_table)===String(tableId));
+    if(!owner){
+      const baseName=sourceTable.technical_name || sourceTable.table_name || "Table";
+      owner=await createSemanticModel({workspace:activeWorkspace.id,name:`${baseName} model`,description:"Created automatically from Analytics while assigning fields to a visual.",base_table:tableId,enabled:true});
+    }
+    const agg=fieldAggregationForSlot({...value,logicalType:field.logical_type},slotKey);
+    const expression=agg==="COUNT" ? `COUNT({{field:${field.name}}})` : `${agg}({{field:${field.name}}})`;
+    const created=await createMetric({workspace:activeWorkspace.id,semantic_model:owner.id,name:`__auto_visual__${field.name}_${agg}_${Date.now()}`,description:"Automatically managed visual binding.",expression_type:"SQL",source_field:null,aggregation:"NONE",expression,format_type:agg==="COUNT"?"INTEGER":"NUMBER",unit:"",decimal_places:agg==="COUNT"?0:2,enabled:true,cache_ttl_seconds:60});
+    const refreshed=listValue(await listSemanticModels(activeWorkspace.id)).filter((item)=>item.enabled!==false);
+    setModels(refreshed);
+    setModelId(owner.id);
+    return {metric:created,aggregation:agg,field};
+  }
+
+  async function handleDrop(value, slotKey) {
+    const slot=propertySlot(slotKey);
+    if (!slot || !value) return;
+    setError("");
+
+    // Category/legend/detail wells are semantic dimensions. A measure has no
+    // row-level category to group by, so explain the mismatch instead of
+    // silently moving it to Values.
+    if (isCategoricalSlot(slotKey) && value.kind === "measure") {
+      setError(`“${value.label || "This measure"}” is a measure and cannot be used in ${slot.label}. Use a field for this categorical role, or drop the measure into a value/axis role.`);
+      return;
+    }
+
+    if (slot.kind === "value") {
+      if (value.kind === "measure") {
+        const nextMetricId=value.metricId || value.id;
+        const owner=models.find((item)=>item.metrics?.some((candidate)=>String(candidate.id)===String(nextMetricId)));
+        if (!owner) { setError("The selected measure is not available in the current semantic models."); return; }
+        const changedModel=String(owner.id)!==String(modelId);
+        if(changedModel){setModelId(owner.id);setDimensionIds([]);}
+        setSlotBindings((current)=>({...Object.fromEntries(Object.entries(changedModel?{}:current).filter(([,binding])=>binding.kind!=="measure" || binding.slotKey!==slotKey)),[slotKey]:{kind:"measure",id:nextMetricId,label:value.label,slotKey}}));
+        setMetricId(nextMetricId);
+        return;
       }
+      if (value.kind === "field" || value.kind === "dimension") {
+        try {
+          const implicit=await createImplicitFieldMetric(value,slotKey);
+          setSlotBindings((current)=>({...current,[slotKey]:{kind:"field",id:value.fieldId || value.id,label:value.label || value.fieldName || implicit.field.name,metricId:implicit.metric.id,aggregation:implicit.aggregation,slotKey}}));
+          setMetricId(implicit.metric.id);
+          setMessage(`${implicit.field.business_name || implicit.field.name} added to ${slot.label} as ${implicit.aggregation}.`);
+        } catch(requestError) { setError(getApiErrorMessage(requestError)); }
+        return;
+      }
+      setError(`${slot.label} accepts a field or a measure.`);
+      return;
     }
+
+    if ((value.kind === "dimension" || value.kind === "field") && slot.kind === "dimension") {
+      setSlotBindings((current)=>({...current,[slotKey]:{kind:"field",id:value.fieldId || value.id,label:value.label || value.fieldName || "Field"}}));
+      try {
+        let candidate=dimensions.find((item)=>String(item.id)===String(value.id)||String(item.field)===String(value.fieldId)||String(item.field_id)===String(value.fieldId)||String(item.field_name||item.name)===String(value.fieldName));
+        if(!candidate && value.kind==="field") candidate=await ensureFieldDimension(value);
+        if(!candidate) { setError(`${slot.label} requires a field that can be registered as a dimension.`); return; }
+        setSlotBindings((current)=>({...current,[slotKey]:{kind:"dimension",id:candidate.id,label:candidate.name}}));
+        setDimensionIds((current)=>current.some((id)=>String(id)===String(candidate.id)) ? current : [...current,candidate.id]);
+        if(chartType==="KPI")setChartType("BAR");
+      } catch(requestError) {
+        setSlotBindings((current)=>{const next={...current};delete next[slotKey];return next});
+        setError(getApiErrorMessage(requestError));
+      }
+      return;
+    }
+
+    setError(`${slot.label} does not accept this data item.`);
+  }
+
+  function clearSlot(slotKey) {
+    const binding=slotBindings[slotKey];
+    setSlotBindings(current=>{const next={...current};delete next[slotKey];return next});
+    if(!binding)return;
+    if(binding.kind==="measure" && String(metricId)===String(binding.id)) setMetricId("");
+    if(binding.kind==="field" && binding.metricId && String(metricId)===String(binding.metricId)) setMetricId("");
+    if(binding.kind==="dimension") {
+      const usedElsewhere=Object.entries(slotBindings).some(([key,item])=>key!==slotKey&&item?.kind==="dimension"&&String(item.id)===String(binding.id));
+      if(!usedElsewhere)setDimensionIds(current=>current.filter(id=>String(id)!==String(binding.id)));
+    }
+  }
+
+  function metricEditorText(item) {
+    if (!item) return "";
+    const language=String(item.expression_type || "DAX").toUpperCase();
+    if (language === "PYTHON") return item.expression || "";
+    return `${item.name} = ${item.expression || ""}`;
+  }
+
+  function findMetricAcrossModels(metricIdValue) {
+    for (const semantic of models) {
+      const found=(semantic.metrics || []).find((item)=>String(item.id)===String(metricIdValue));
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function openMeasureInCode(item) {
+    if (!item) return;
+    setEditingMeasureId(item.id);
+    const owner=models.find((semantic)=>(semantic.metrics || []).some((candidate)=>String(candidate.id)===String(item.id)));
+    if (owner) {
+      setModelId(owner.id);
+      const ownerTable=tables.find((candidate)=>String(candidate.id)===String(owner.base_table));
+      if (ownerTable) setTable(ownerTable);
+    }
+    setMetricId(item.id);
+    setCodeLanguage(String(item.expression_type || "DAX").toUpperCase());
+    setCode(metricEditorText(item));
+    setCodeOpen(true);
+    setMessage(`Editing measure: ${item.name}`);
+  }
+
+  function parseMeasureCode(raw, language) {
+    const text=String(raw || "").trim();
+    if (!text) throw new Error("Write a measure before running the code block.");
+    const lang=String(language || "DAX").toUpperCase();
+    if (lang === "PYTHON") {
+      const nameMatch=text.match(/^\s*#\s*(?:measure|name)\s*:\s*(.+?)\s*$/im);
+      const fallback=metric ? metric.name : "Python Measure";
+      return {name:(nameMatch?.[1] || fallback).trim(), expression:text, expression_type:"PYTHON"};
+    }
+    const equals=text.indexOf("=");
+    if (equals <= 0 || equals === text.length - 1) {
+      throw new Error(`Use the format Measure Name = expression for ${lang}.`);
+    }
+    const name=text.slice(0,equals).trim();
+    const expression=text.slice(equals+1).trim();
+    if (!name || !expression) throw new Error("The measure needs both a name and an expression.");
+    return {name,expression,expression_type:lang};
+  }
+
+  function referencedFieldNames(expression) {
+    const text=String(expression || "");
+    const names=new Set();
+    for (const match of text.matchAll(/\[\s*([A-Za-z_][A-Za-z0-9_]*)\s*\]/g)) names.add(match[1]);
+    const fn=/\b(?:COUNT|COUNTA|DISTINCTCOUNT|SUM|AVERAGE|AVG|MIN|MAX)\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)/gi;
+    for (const match of text.matchAll(fn)) names.add(match[1]);
+    return [...names];
+  }
+
+  function resolveMeasureTable(parsed) {
+    if (table?.id) return table;
+    if (model?.base_table) {
+      const current=tables.find((item)=>String(item.id)===String(model.base_table));
+      if (current) return current;
+    }
+    const names=referencedFieldNames(parsed.expression).map((value)=>value.toLowerCase());
+    if (names.length) {
+      const matches=tables.filter((candidate)=>names.every((name)=>(candidate.fields || []).some((field)=>String(field.name).toLowerCase()===name)));
+      if (matches.length === 1) return matches[0];
+      if (matches.length > 1) throw new Error("The referenced fields exist in more than one table. Select the target table in Data first.");
+    }
+    if (tables.length === 1) return tables[0];
+    throw new Error("Select the table that owns this measure in the Data panel first.");
+  }
+
+  async function commitMeasureCode() {
+    if (!canWrite || codeBusy) return;
+    setCodeBusy(true); setError(""); setMessage("");
+    try {
+      const parsed=parseMeasureCode(code,codeLanguage);
+      const targetTable=resolveMeasureTable(parsed);
+      let owner=models.find((item)=>String(item.base_table)===String(targetTable.id));
+      if (!owner) {
+        const baseName=targetTable.technical_name || targetTable.table_name || "Table";
+        owner=await createSemanticModel({
+          workspace:activeWorkspace.id,
+          name:`${baseName} model`,
+          description:"Created automatically from Analytics for reusable measures.",
+          base_table:targetTable.id,
+          enabled:true,
+        });
+      }
+      const existing=models.flatMap((item)=>item.metrics || []).find((item)=>String(item.name).trim().toLowerCase()===parsed.name.toLowerCase());
+      const payload={
+        workspace:activeWorkspace.id,
+        semantic_model:owner.id,
+        name:parsed.name,
+        description:existing?.description || "",
+        expression_type:parsed.expression_type,
+        source_field:null,
+        aggregation:"NONE",
+        expression:parsed.expression,
+        format_type:existing?.format_type || "NUMBER",
+        unit:existing?.unit || "",
+        decimal_places:existing?.decimal_places ?? 2,
+        enabled:true,
+        cache_ttl_seconds:existing?.cache_ttl_seconds ?? 60,
+      };
+      const saved=existing ? await updateMetric(existing.id,payload) : await createMetric(payload);
+      await createScriptBlock({workspace:activeWorkspace.id,name:saved.name,purpose:"MEASURE",language:codeLanguage,code,context:{table_id:targetTable.id},linked_object_type:"METRIC",linked_object_id:saved.id,status:"APPLIED"});
+      const refreshed=listValue(await listSemanticModels(activeWorkspace.id)).filter((item)=>item.enabled!==false);
+      setModels(refreshed);
+      const refreshedOwner=refreshed.find((item)=>String(item.id)===String(saved.semantic_model));
+      setModelId(refreshedOwner?.id || saved.semantic_model);
+      setMetricId(saved.id);
+      setTable(targetTable);
+      setCode("");
+      setMessage(existing ? `Measure “${saved.name}” updated.` : `Measure “${saved.name}” created.`);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError));
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
+  async function saveDashboardDirectly() {
+    if(!canWrite || !activeWorkspace?.id)return;
+    const name=reportName.trim() || "Untitled report";
+    setSaving(true);setError("");
+    const layout={pages:pages.map(page=>page.id===activePageId?{...page,state:currentPageState()}:page),active_page_id:activePageId,workspace_state:"SAVED"};
+    try {
+      let saved;
+      if(savedDashboardId){
+        saved=await updateDashboard(savedDashboardId,{name,layout});
+      }else{
+        saved=await createDashboard({workspace:activeWorkspace.id,name,description:"",layout,global_filters:[]});
+        setSavedDashboardId(saved.id);
+      }
+      setReportName(saved?.name || name);
+      setMessage("Dashboard guardado.");
+    }catch(requestError){setError(getApiErrorMessage(requestError))}finally{setSaving(false)}
   }
 
   async function saveAnalysis(event) {
@@ -348,7 +646,7 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
       chart_type: chartType,
       metric: metricId,
       dimensions: dimensionIds,
-      config: {},
+      config: {...(savedChart?.config||{}),visualSize:visualSize||defaultVisualSize(chartType),visualPosition},
       default_filters: normalizeAnalyticsFilters(filters),
       sort_order: [],
       limit: Number(limit) || 1000,
@@ -377,23 +675,13 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
   if (!activeWorkspace) return <EmptyState title="Selecciona un workspace" description="Explore pertenece a un workspace." />;
   if (loading) return <Spinner label="Preparando Explore..." />;
 
-  if (!models.length) {
-    return (
-      <div className="pageStack">
-        <header className="pageHeader"><p className="eyebrow">Analyze</p><h1>Explore</h1><p>Explora métricas visualmente sin crear objetos intermedios antes de tiempo.</p></header>
-        {error && <Alert type="error">{error}</Alert>}
-        <EmptyState title="No hay modelos semánticos" description="Crea un Semantic Model y al menos una medida para comenzar a explorar." />
-        <div className="formActions"><Link href="/app/data-table" className="button primaryButton">Open Data workspace</Link></div>
-      </div>
-    );
-  }
-
   return (
     <div className="explorePage">
 
       {error && <Alert type="error">{error}</Alert>}
       {message && <Alert type="success">{message}</Alert>}
-      <WorkspaceCommandBar view="analytics" codeOpen={codeOpen} onToggleCode={()=>setCodeOpen(v=>!v)} onSave={()=>{if(!saveName)setSaveName(savedChart?.name||`${metric?.name||"Analysis"} analysis`);setSaveOpen(true)}} onReading={()=>setReadingView(v=>!v)} onRefresh={()=>runQuery()}>
+      {!models.length && <Alert type="info">Blank analytics workspace ready. Select a table from Data and use the code block to create reusable measures as you build the report.</Alert>}
+      <WorkspaceCommandBar view="analytics" codeOpen={codeOpen} onToggleCode={()=>setCodeOpen(v=>!v)} onSave={saveDashboardDirectly} onReading={()=>setReadingView(v=>!v)} onRefresh={()=>runQuery()}>
         <input className="analyticsReportName" value={reportName} onChange={e=>setReportName(e.target.value)} aria-label="Report name" title="Rename report" />
       </WorkspaceCommandBar>
 
@@ -405,10 +693,10 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
       )}
 
       <div className={`exploreWorkspace tableauWorkspace ${readingView?"readingView":""} ${codeOpen?"codeOpen":""} ${propertiesOpen?"":"propertiesCollapsed"} ${dataPanelOpen?"":"dataCollapsed"}`}>
-        <aside className="analyticsVisualRail" aria-label="Visuals">{CHART_TYPES.map(item=><button type="button" key={item.id} className={chartType===item.id&&visualSelected?"active":""} data-tooltip={item.label} aria-label={item.label} onClick={()=>{setChartType(item.id);setMetricId("");setDimensionIds([]);setDataset(null);setVisualPosition({x:0,y:0});setVisualSelected(true)}}><Icon name={item.icon} size={18}/></button>)}</aside>{!propertiesOpen&&<button type="button" className="analyticsCollapsedPanelButton properties" onClick={()=>setPropertiesOpen(true)}>Properties</button>}{!dataPanelOpen&&<button type="button" className="analyticsCollapsedPanelButton data" onClick={()=>setDataPanelOpen(true)}>Data</button>}
-        {codeOpen&&<div className="analyticsWideCode"><ScriptWorkbench compact language={codeLanguage} onLanguage={setCodeLanguage} code={code} onCode={setCode} onCommit={()=>setMessage("Code block ready for execution integration.")} /></div>}
+        <aside className="analyticsVisualRail" aria-label="Visuals">{CHART_TYPES.map(item=><button type="button" key={item.id} className={chartType===item.id&&visualSelected?"active":""} aria-label={item.label} onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setVisualTooltip({label:item.label,x:r.right+8,y:r.top+r.height/2})}} onMouseLeave={()=>setVisualTooltip(null)} onFocus={e=>{const r=e.currentTarget.getBoundingClientRect();setVisualTooltip({label:item.label,x:r.right+8,y:r.top+r.height/2})}} onBlur={()=>setVisualTooltip(null)} onClick={()=>{setVisualSize(null);setChartType(item.id);setMetricId("");setDimensionIds([]);setSlotBindings({});setDataset(null);setVisualPosition({x:0,y:0});setVisualSelected(true)}}><Icon name={item.icon} size={18}/></button>)}</aside>{visualTooltip&&<div className="analyticsVisualTooltip" role="tooltip" style={{left:visualTooltip.x,top:visualTooltip.y}}>{visualTooltip.label}</div>}{!propertiesOpen&&<button type="button" className="analyticsCollapsedPanelButton properties" onClick={()=>setPropertiesOpen(true)}>Properties</button>}{!dataPanelOpen&&<button type="button" className="analyticsCollapsedPanelButton data" onClick={()=>setDataPanelOpen(true)}>Data</button>}
+        {codeOpen&&<div className="analyticsWideCode"><ScriptWorkbench metricId={editingMeasureId} compact language={codeLanguage} onLanguage={setCodeLanguage} code={code} onCode={setCode} onCommit={commitMeasureCode} busy={codeBusy} /></div>}
         <aside className="exploreDataPane analyticsSharedDataPane">
-          <div className="explorePaneHeader"><strong>Data</strong><button type="button" className="panelCollapseButton" onClick={()=>setDataPanelOpen(false)} title="Collapse Data">›</button></div>
+          <div className="explorePaneHeader unifiedPanelHeader"><div><strong>Data</strong><span>{table?.technical_name||table?.table_name||"No table selected"}</span></div><button type="button" className="panelCollapseButton" onClick={()=>setDataPanelOpen(false)} title="Collapse Data">›</button></div>
           <SharedDataPanel
             tables={tables}
             models={models}
@@ -416,14 +704,18 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
             draggable
             onTable={(id)=>{const candidate=tables.find((item)=>String(item.id)===String(id));if(candidate)setTable(candidate)}}
             onField={()=>{}}
+            onMeasure={openMeasureInCode}
+            onMeasureDeleted={(id)=>{setModels(current=>current.map(item=>({...item,metrics:(item.metrics||[]).filter(metricItem=>String(metricItem.id)!==String(id))})));if(String(metricId)===String(id)){setMetricId("");setDataset(null)}}}
           />
         </aside>
 
         <main className="exploreCanvasPane">
-          {visualSelected && <div className={`exploreCanvas analyticsVisualBlock selected ${running && !dataset ? "isLoading":""}`} tabIndex={0} style={{transform:`translate(${visualPosition.x}px, ${visualPosition.y}px)`,background:visualFormat.background,border:visualFormat.border?undefined:"0",fontSize:visualFormat.fontSize,borderRadius:visualFormat.radius,boxShadow:visualFormat.shadow?"0 8px 24px rgba(18,26,33,.12)":undefined,padding:visualFormat.padding,opacity:(visualFormat.opacity||100)/100}} onClick={(event)=>event.stopPropagation()} onMouseDown={(event)=>{if(event.button!==0||event.target.closest("button,input,select,textarea"))return;event.preventDefault();setDraggingVisual(true);dragOrigin.current={mouseX:event.clientX,mouseY:event.clientY,x:visualPosition.x,y:visualPosition.y}}} onMouseMove={(event)=>{if(!draggingVisual||!dragOrigin.current)return;setVisualPosition({x:dragOrigin.current.x+(event.clientX-dragOrigin.current.mouseX),y:dragOrigin.current.y+(event.clientY-dragOrigin.current.mouseY)})}} onMouseUp={()=>{setDraggingVisual(false);dragOrigin.current=null}} onMouseLeave={()=>{if(draggingVisual){setDraggingVisual(false);dragOrigin.current=null}}} onKeyDown={(event)=>{const step=event.shiftKey?10:2;if(event.key==="ArrowLeft"){event.preventDefault();setVisualPosition(p=>({...p,x:p.x-step}))}if(event.key==="ArrowRight"){event.preventDefault();setVisualPosition(p=>({...p,x:p.x+step}))}if(event.key==="ArrowUp"){event.preventDefault();setVisualPosition(p=>({...p,y:p.y-step}))}if(event.key==="ArrowDown"){event.preventDefault();setVisualPosition(p=>({...p,y:p.y+step}))}if((event.key==="Delete"||event.key==="Backspace")&&(event.ctrlKey||event.metaKey)){event.preventDefault();setVisualSelected(false);setMetricId("");setDimensionIds([]);setDataset(null)}}}>
-            <button type="button" className="visualDeleteButton visualDeleteOnCanvas" title="Delete visual" aria-label="Delete visual" onMouseDown={e=>e.stopPropagation()} onClick={(e)=>{e.stopPropagation();setVisualSelected(false);setMetricId("");setDimensionIds([]);setDataset(null)}}><Icon name="close" size={15}/></button>
+          <div className="analyticsCanvasViewport"><div className="analyticsReportSurface">
+          {visualSelected && <ResizableVisual className={`exploreCanvas analyticsVisualBlock selected ${running && !dataset ? "isLoading":""}`} tabIndex={0} position={visualPosition} size={visualSize||defaultVisualSize(chartType)} onPosition={setVisualPosition} onSize={setVisualSize} editable={canWrite&&!readingView} style={{background:visualFormat.background,border:visualFormat.border?undefined:"0",fontSize:visualFormat.fontSize,borderRadius:visualFormat.radius,boxShadow:visualFormat.shadow?"0 8px 24px rgba(18,26,33,.12)":undefined,padding:visualFormat.padding,opacity:(visualFormat.opacity||100)/100}} onKeyDown={event=>{if(event.target!==event.currentTarget||!canWrite||readingView)return;if((event.key==="Delete"||event.key==="Backspace")&&(event.ctrlKey||event.metaKey)){event.preventDefault();setVisualSelected(false);setMetricId("");setDimensionIds([]);setSlotBindings({});setDataset(null);return}const step=event.shiftKey?10:2;const size=visualSize||defaultVisualSize(chartType);if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key)){event.preventDefault();setVisualPosition(p=>({x:Math.max(0,Math.min(960-size.width,p.x+(event.key==="ArrowRight"?step:event.key==="ArrowLeft"?-step:0))),y:Math.max(0,Math.min(600-size.height,p.y+(event.key==="ArrowDown"?step:event.key==="ArrowUp"?-step:0)))}))}}}>
+            <button type="button" className="visualDeleteButton visualDeleteOnCanvas" title="Delete visual" aria-label="Delete visual" onMouseDown={e=>e.stopPropagation()} onClick={(e)=>{e.stopPropagation();setVisualSelected(false);setMetricId("");setDimensionIds([]);setSlotBindings({});setDataset(null)}}><Icon name="close" size={15}/></button>
             {!metric ? <div className="exploreCanvasEmpty chartSpecificPlaceholder"><span className="emptyVisualIcon"><Icon name={CHART_TYPES.find(item=>item.id===chartType)?.icon||"chart"} size={30} /></span><strong>{CHART_TYPES.find(item=>item.id===chartType)?.label||"Visual"}</strong><span>Empty {CHART_TYPES.find(item=>item.id===chartType)?.label?.toLowerCase()||"visual"}. Drag fields and measures from Data into Properties to build it.</span></div> : running && !dataset ? <Spinner label="Querying measure..." /> : dataset ? <ChartRenderer chart={{ chart_type: chartType, name: savedChart?.name || metric.name }} dataset={dataset} /> : <div className="exploreCanvasEmpty"><strong>No result yet</strong><button type="button" className="button secondaryButton" onClick={() => runQuery()}>Run query</button></div>}
-          </div>}
+          </ResizableVisual>}
+          </div></div>
           <div className="analyticsPageTabs" aria-label="Report pages">
             <div className="analyticsPageTabsScroller">{pages.map(page=><div key={page.id} className={`analyticsPageTab ${activePageId===page.id?"active":""}`} onClick={()=>switchPage(page.id)}>{renamingPageId===page.id?<input autoFocus value={page.name} onChange={e=>setPages(list=>list.map(item=>item.id===page.id?{...item,name:e.target.value}:item))} onBlur={()=>setRenamingPageId(null)} onKeyDown={e=>{if(e.key==="Enter"||e.key==="Escape")setRenamingPageId(null)}}/>:<button type="button" onDoubleClick={()=>setRenamingPageId(page.id)} title="Double-click to rename page">{page.name}</button>}</div>)}</div>
             <button type="button" className="analyticsAddPage" title="Add page" aria-label="Add page" onClick={addPage}><Icon name="plus" size={15}/></button>
@@ -438,11 +730,15 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
           </div>
           {rightTab === "properties" && <div className="explorePropertiesBody">
             <section className="propertySection"><div className="propertyTitle"><strong>{visualSelected ? (CHART_TYPES.find(item=>item.id===chartType)?.label||chartType) : "No visual selected"}</strong><span>{visualSelected ? "Drag fields and measures from Data into the specific roles for this chart." : "Choose a chart from the left rail to add it to the canvas."}</span></div>
-              {visualSelected && (VISUAL_PROPERTY_SLOTS[chartType] || VISUAL_PROPERTY_SLOTS.BAR).map((slot,index) => {
-                const dimension = slot.kind === "dimension" ? selectedDimensions[index === 0 ? 0 : Math.min(index, selectedDimensions.length - 1)] : null;
-                return <DropZone key={`${chartType}-${slot.key}`} label={slot.label} hint={slot.hint} emptyText={`Drop ${slot.hint.toLowerCase()}`} onDrop={(value) => handleDrop(value, slot.kind === "measure" ? "measure" : "dimension")}>
-                  {slot.kind === "measure" && metric ? <button type="button" className="encodingPill measure" onClick={() => setMetricId("")}>{metric.name}<span>×</span></button> : null}
-                  {slot.kind === "dimension" && dimension ? <button type="button" className="encodingPill" onClick={() => toggleDimension(dimension.id)}>{dimension.name}<span>×</span></button> : null}
+              {visualSelected && (VISUAL_PROPERTY_SLOTS[chartType] || VISUAL_PROPERTY_SLOTS.BAR).map((slot) => {
+                const binding=slotBindings[slot.key];
+                const boundMeasure=binding?.kind==="measure" ? metrics.find(item=>String(item.id)===String(binding.id)) : null;
+                const boundDimension=binding?.kind==="dimension" ? dimensions.find(item=>String(item.id)===String(binding.id)) : null;
+                const pendingField=binding?.kind==="field" ? binding : null;
+                return <DropZone key={`${chartType}-${slot.key}`} label={slot.label} hint={slot.hint} emptyText={`Drop ${slot.hint.toLowerCase()}`} onDrop={(value) => handleDrop(value, slot.key)}>
+                  {boundMeasure ? <button type="button" className="encodingPill measure" onClick={() => clearSlot(slot.key)}>{boundMeasure.name}<span>×</span></button> : null}
+                  {boundDimension ? <button type="button" className="encodingPill" onClick={() => clearSlot(slot.key)}>{boundDimension.name}<span>×</span></button> : null}
+                  {pendingField ? <button type="button" className="encodingPill pending" onClick={() => clearSlot(slot.key)}>{pendingField.label}<span>×</span></button> : null}
                 </DropZone>;
               })}
             </section>
@@ -476,7 +772,6 @@ export default function ExploreStudio({ chartId = null, dashboardId = null }) {
         </aside>
       </div>
 
-      {saveOpen && <div className="modalBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSaveOpen(false); }}><form className="modalCard exploreSaveModal" onSubmit={saveAnalysis}><div className="cardHeader"><div><p className="eyebrow">Persist analysis</p><h2>{savedChart ? "Update analysis" : "Save analysis"}</h2><p>The current visual, dimensions and filters become a reusable ChartDefinition.</p></div><button type="button" className="iconButton" onClick={() => setSaveOpen(false)}><Icon name="close" size={16} /></button></div><label>Name<input autoFocus value={saveName} onChange={(event) => setSaveName(event.target.value)} placeholder="e.g. Revenue by month" required /></label><div className="exploreSaveSummary"><span>{chartType}</span><span>{metric?.name}</span><span>{dimensionIds.length} dimension(s)</span><span>{filters.length} filter(s)</span></div><div className="formActions"><button type="button" className="button secondaryButton" onClick={() => setSaveOpen(false)}>Cancel</button><button type="submit" className="button primaryButton" disabled={saving || !saveName.trim()}>{saving ? "Saving..." : savedChart ? "Update analysis" : "Save analysis"}</button></div></form></div>}
     </div>
   );
 }

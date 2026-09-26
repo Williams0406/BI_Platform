@@ -8,7 +8,7 @@ from django.utils import timezone
 from datasources.models import DataAsset
 from dependencies.models import AssetDependency
 from dependencies.services import create_dependency, ensure_asset_state, record_change
-from execution.services import mark_running, mark_success, update_progress, emit_event, report_metric
+from execution.services import mark_running, mark_success, update_progress, emit_event, report_metric, ensure_not_cancelled
 from platform_ops.storage import put_bytes
 
 from .adapters.registry import build_adapter
@@ -145,9 +145,11 @@ def execute_optimization(execution, run):
     run.execution_id = execution.id
     run.save(update_fields=["status", "started_at", "execution_id"])
 
+    ensure_not_cancelled(execution)
     update_progress(execution, 10, "Resolviendo parámetros del escenario.")
     parameters, input_versions = resolve_parameters(model, scenario)
 
+    ensure_not_cancelled(execution)
     update_progress(execution, 25, "Compilando modelo matemático.")
     compiled = compile_model(model, parameters)
     emit_event(execution, "OPTIMIZATION_MODEL_COMPILED", {"problem_type": model.problem_type, "parameters": parameters, "objective": getattr(model.objective, "expression", {}), "constraints": [{"name": c.name, "sense": c.sense, "left": c.left_expression, "right": c.right_value} for c in model.constraints.filter(enabled=True)]}, family="OPTIMIZATION")
@@ -156,6 +158,7 @@ def execute_optimization(execution, run):
         scenario.baseline_values or {},
     )
 
+    ensure_not_cancelled(execution)
     update_progress(
         execution,
         40,
@@ -163,7 +166,9 @@ def execute_optimization(execution, run):
     )
     adapter = build_adapter(solver_config)
     emit_event(execution, "OPTIMIZATION_SOLVE_STARTED", {"adapter": solver_config.adapter, "solver_name": solver_config.solver_name, "time_limit_seconds": solver_config.time_limit_seconds}, family="OPTIMIZATION")
+    ensure_not_cancelled(execution)
     result = adapter.solve(compiled, solver_config)
+    ensure_not_cancelled(execution)
     emit_event(execution, "OPTIMIZATION_PROGRESS", {"incumbent": result.objective_value, "best_bound": result.best_bound, "gap": result.gap, "elapsed_seconds": (result.solve_time_ms or 0) / 1000}, family="OPTIMIZATION")
     if result.objective_value is not None: report_metric(execution, "objective", result.objective_value, scope="solution")
     if result.gap is not None: report_metric(execution, "gap", result.gap, scope="solution")

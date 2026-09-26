@@ -5,3 +5,9 @@ export async function listEnvironments(workspace){return (await api.get(API_ENDP
 export async function createEnvironment(payload){return (await api.post(API_ENDPOINTS.environments.list,payload)).data}
 export async function addEnvironmentPackage(payload){return (await api.post(API_ENDPOINTS.environments.packages,payload)).data}
 export async function deleteEnvironmentPackage(id){return api.delete(`${API_ENDPOINTS.environments.packages}${id}/`)}
+export async function searchPyPIPackages(q){return (await api.get(`${API_ENDPOINTS.environments.packages}search-pypi/`,{params:{q}})).data}
+export async function getPyPIPackage(name){return (await api.get(`${API_ENDPOINTS.environments.packages}pypi-package/`,{params:{name}})).data}
+
+export async function retryEnvironmentPackage(id){return (await api.post(`${API_ENDPOINTS.environments.packages}${id}/retry-install/`,{})).data}
+
+export async function syncInstalledEnvironmentPackages(environment){return (await api.post(`${API_ENDPOINTS.environments.packages}sync-installed/`,{environment})).data}

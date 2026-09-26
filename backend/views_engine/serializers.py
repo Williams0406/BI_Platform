@@ -76,6 +76,9 @@ class ViewDefinitionSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+        # Naming for blank Operational Views is resolved in create(), where a
+        # collision can be converted to Untitled view 2, 3, ... .
+        validators = []
 
     def validate(self, attrs):
         workspace = attrs.get("workspace", getattr(self.instance, "workspace", None))
@@ -84,6 +87,13 @@ class ViewDefinitionSerializer(serializers.ModelSerializer):
             getattr(self.instance, "source_table", None),
         )
         request = self.context["request"]
+        requested_name = (attrs.get("name", getattr(self.instance, "name", "")) or "").strip()
+        if workspace and requested_name and not requested_name.lower().startswith("untitled view"):
+            duplicate = ViewDefinition.objects.filter(workspace=workspace, name=requested_name)
+            if self.instance is not None:
+                duplicate = duplicate.exclude(pk=self.instance.pk)
+            if duplicate.exists():
+                raise serializers.ValidationError({"name": "Ya existe una vista con este nombre en el workspace."})
 
         if source_table and workspace:
             if source_table.data_source.workspace_id != workspace.id:
@@ -105,6 +115,23 @@ class ViewDefinitionSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        # Blank Operational Views use a generated display name. Avoid surfacing the
+        # workspace/name uniqueness constraint when more than one blank view exists.
+        workspace = validated_data.get("workspace")
+        requested_name = (validated_data.get("name") or "").strip()
+        if workspace and requested_name.lower().startswith("untitled view"):
+            base = "Untitled view"
+            used = set(
+                ViewDefinition.objects.filter(workspace=workspace, name__istartswith=base)
+                .values_list("name", flat=True)
+            )
+            if requested_name in used:
+                index = 2
+                candidate = f"{base} {index}"
+                while candidate in used:
+                    index += 1
+                    candidate = f"{base} {index}"
+                validated_data["name"] = candidate
         validated_data["created_by"] = self.context["request"].user
         return super().create(validated_data)
 

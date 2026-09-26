@@ -120,6 +120,13 @@ def _dax_to_sql(metric, expression):
                     alt = args[2] if len(args) == 3 else "NULL"
                     return f"CASE WHEN ({args[1]}) = 0 THEN {alt} ELSE ({args[0]})::numeric / ({args[1]}) END"
                 raise MetricQueryError(f"Función DAX no soportada: {name}")
+            # Accept a bare catalog field inside aggregation functions, e.g.
+            # COUNT(machine_id). Standard DAX also supports Table[field], which
+            # is normalized to FIELD(field) above. Allowing the bare form keeps
+            # the dashboard code editor concise while still validating the
+            # identifier against the semantic model's base table.
+            if name in allowed:
+                return quote(name)
             raise MetricQueryError(f"Identificador DAX no soportado: {name}")
         raise MetricQueryError("Expresión DAX inválida.")
 

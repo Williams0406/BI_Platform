@@ -7,14 +7,14 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix, classification_report, roc_auc_score, roc_curve, precision_recall_curve, average_precision_score, log_loss, mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from datasources.models import DataAsset
 from dependencies.models import AssetDependency
 from dependencies.services import create_dependency, ensure_asset_state, record_change
-from execution.services import mark_running, mark_success, update_progress, emit_event, report_metric
+from execution.services import mark_running, mark_success, update_progress, emit_event, report_metric, ensure_not_cancelled
 from platform_ops.storage import materialize, put_file
 from platform_ops.parquet import dataframe_to_parquet_artifact
 from .data_io import dataset_to_dataframe, save_dataframe_csv
@@ -55,11 +55,42 @@ def build_pipeline(model,dataframe,feature_names):
     estimator=estimator_cls(**params)
     return Pipeline([("preprocessor",preprocessor),("estimator",estimator)])
 
-def evaluation_metrics(model,y_true,y_pred):
+def evaluation_metrics(model,y_true,y_pred,estimator=None,X_test=None):
     if model.task_type==ModelDefinition.TaskType.CLASSIFICATION:
-        return {"accuracy":float(accuracy_score(y_true,y_pred)),"f1_weighted":float(f1_score(y_true,y_pred,average="weighted",zero_division=0))}
+        labels=list(getattr(estimator,"classes_",[])) if estimator is not None else []
+        average="binary" if len(labels)==2 else "weighted"
+        result={
+            "accuracy":float(accuracy_score(y_true,y_pred)),
+            "precision":float(precision_score(y_true,y_pred,average=average,zero_division=0)),
+            "recall":float(recall_score(y_true,y_pred,average=average,zero_division=0)),
+            "f1_score":float(f1_score(y_true,y_pred,average=average,zero_division=0)),
+            "f1_weighted":float(f1_score(y_true,y_pred,average="weighted",zero_division=0)),
+            "confusion_matrix":confusion_matrix(y_true,y_pred,labels=labels or None).tolist(),
+            "class_labels":[str(v) for v in labels],
+            "classification_report":classification_report(y_true,y_pred,labels=labels or None,output_dict=True,zero_division=0),
+        }
+        if hasattr(y_true,"value_counts"):
+            result["class_distribution"]={str(k):int(v) for k,v in y_true.value_counts().sort_index().items()}
+        if estimator is not None and X_test is not None and hasattr(estimator,"predict_proba"):
+            try:
+                proba=estimator.predict_proba(X_test)
+                if len(labels)==2:
+                    positive=proba[:,1]
+                    result["roc_auc"]=float(roc_auc_score(y_true,positive))
+                    result["pr_auc"]=float(average_precision_score(y_true,positive))
+                    try: result["log_loss"]=float(log_loss(y_true,proba,labels=labels or None))
+                    except Exception: pass
+                    fpr,tpr,_=roc_curve(y_true,positive,pos_label=labels[1] if labels else 1)
+                    pc,rc,_=precision_recall_curve(y_true,positive,pos_label=labels[1] if labels else 1)
+                    result["roc_curve"]=[{"x":float(x),"y":float(y)} for x,y in zip(fpr,tpr)]
+                    result["precision_recall_curve"]=[{"x":float(x),"y":float(y)} for x,y in zip(rc,pc)]
+                else:
+                    result["roc_auc"]=float(roc_auc_score(y_true,proba,multi_class="ovr",average="weighted"))
+            except Exception as exc: result["probability_warning"]=str(exc)
+        return result
     mse=mean_squared_error(y_true,y_pred)
-    return {"mae":float(mean_absolute_error(y_true,y_pred)),"mse":float(mse),"rmse":float(mse**0.5),"r2":float(r2_score(y_true,y_pred))}
+    residuals=y_true-y_pred
+    return {"mae":float(mean_absolute_error(y_true,y_pred)),"mse":float(mse),"rmse":float(mse**0.5),"r2":float(r2_score(y_true,y_pred)),"actual_vs_predicted":[{"actual":float(a),"predicted":float(b)} for a,b in list(zip(y_true,y_pred))[:500]],"residuals":[float(v) for v in list(residuals)[:500]]}
 
 @transaction.atomic
 def ensure_model_data_asset(model):
@@ -86,6 +117,7 @@ def train_model(execution,model_run):
     model_run.status=ModelRun.Status.RUNNING; model_run.started_at=timezone.now(); model_run.execution_id=execution.id
     model_run.parameters_snapshot=dict(model.parameters or {})
     model_run.save(update_fields=["status","started_at","execution_id","parameters_snapshot"])
+    ensure_not_cancelled(execution)
     update_progress(execution,10,"Cargando dataset.")
     feature_names=list(model.features.values_list("name",flat=True))
     if not feature_names: raise ValueError("El modelo requiere al menos un feature.")
@@ -98,11 +130,14 @@ def train_model(execution,model_run):
         counts=y.value_counts()
         if len(counts)>1 and counts.min()>=2: stratify=y
     X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=model.test_size,random_state=model.random_state,stratify=stratify)
+    ensure_not_cancelled(execution)
     update_progress(execution,35,"Entrenando modelo.")
     emit_event(execution, "ML_TRAINING_STARTED", {"algorithm": model.algorithm, "task_type": model.task_type, "train_rows": len(X_train), "test_rows": len(X_test)}, family="ML")
     pipeline=build_pipeline(model,df,feature_names); pipeline.fit(X_train,y_train)
+    ensure_not_cancelled(execution)
     update_progress(execution,70,"Evaluando modelo.")
-    predictions=pipeline.predict(X_test); metrics=evaluation_metrics(model,y_test,predictions)
+    ensure_not_cancelled(execution)
+    predictions=pipeline.predict(X_test); metrics=evaluation_metrics(model,y_test,predictions,estimator=pipeline,X_test=X_test)
     for metric_name, metric_value in metrics.items():
         if isinstance(metric_value, (int, float)):
             report_metric(execution, metric_name, metric_value, scope="evaluation")
@@ -135,13 +170,15 @@ def train_model(execution,model_run):
     mark_success(execution,result); return result
 
 def batch_inference(execution,model_version,dataset,requested_by=None):
-    mark_running(execution); update_progress(execution,10,"Cargando modelo versionado.")
+    mark_running(execution); ensure_not_cancelled(execution); update_progress(execution,10,"Cargando modelo versionado.")
     with materialize(model_version.artifact_path, suffix=".joblib") as model_path:
         artifact=joblib.load(model_path)
     pipeline=artifact["pipeline"]; feature_names=artifact["feature_names"]
     df=dataset_to_dataframe(dataset,columns=feature_names)
+    ensure_not_cancelled(execution)
     update_progress(execution,45,"Ejecutando inferencia batch.")
     output=df.copy(); output["prediction"]=pipeline.predict(df[feature_names])
+    ensure_not_cancelled(execution)
     artifact_uri=dataframe_to_parquet_artifact(
         output,
         f"predictions/{model_version.model_id}/{execution.id}/predictions.parquet",

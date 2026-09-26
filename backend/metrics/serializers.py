@@ -4,6 +4,7 @@ from datasources.models import DataAsset
 from workspaces.models import Membership
 
 from .models import MetricDefinition, SemanticDimension, SemanticModel
+from .query_engine import MetricQueryError, _dax_to_sql, _validate_sql_expression
 
 
 WRITE_ROLES = {
@@ -102,10 +103,34 @@ class MetricDefinitionSerializer(serializers.ModelSerializer):
                 "Una métrica SIMPLE requiere source_field, excepto COUNT."
             )
 
-        if expression_type in {MetricDefinition.ExpressionType.SQL, MetricDefinition.ExpressionType.DAX, MetricDefinition.ExpressionType.PYTHON} and not (attrs.get("expression", getattr(self.instance, "expression", "")) or "").strip():
+        expression = (attrs.get("expression", getattr(self.instance, "expression", "")) or "").strip()
+        if expression_type in {MetricDefinition.ExpressionType.SQL, MetricDefinition.ExpressionType.DAX, MetricDefinition.ExpressionType.PYTHON} and not expression:
             raise serializers.ValidationError(
                 "La medida requiere una expresión o script."
             )
+
+        # Validate executable SQL/DAX before the metric or its Code block is
+        # persisted. This gives Analytics a useful 400 response instead of
+        # saving an invalid measure.
+        if semantic_model and expression:
+            probe = self.instance or MetricDefinition(workspace=workspace, semantic_model=semantic_model)
+            probe.semantic_model = semantic_model
+            try:
+                if expression_type == MetricDefinition.ExpressionType.DAX:
+                    _dax_to_sql(probe, expression)
+                elif expression_type == MetricDefinition.ExpressionType.SQL:
+                    _validate_sql_expression(probe, expression)
+            except MetricQueryError as exc:
+                raise serializers.ValidationError({"expression": str(exc)}) from exc
+
+        # Return a clean validation error for a workspace-level duplicate.
+        name = attrs.get("name", getattr(self.instance, "name", ""))
+        if workspace and name:
+            duplicate = MetricDefinition.objects.filter(workspace=workspace, name__iexact=name)
+            if self.instance:
+                duplicate = duplicate.exclude(pk=self.instance.pk)
+            if duplicate.exists():
+                raise serializers.ValidationError({"name": "Ya existe una medida con este nombre en el workspace."})
 
         return attrs
 
@@ -128,20 +153,55 @@ class MetricDefinitionSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        asset = DataAsset.objects.create(
+        asset, _ = DataAsset.objects.update_or_create(
             workspace=workspace,
-            data_source=metric.semantic_model.base_table.data_source,
             name=metric.name,
             asset_type=DataAsset.AssetType.METRIC,
-            status=DataAsset.Status.ACTIVE,
-            metadata={
-                "semantic_model_id": str(metric.semantic_model_id),
-                "metric_id": str(metric.id),
+            defaults={
+                "data_source": metric.semantic_model.base_table.data_source,
+                "status": DataAsset.Status.ACTIVE,
+                "metadata": {
+                    "semantic_model_id": str(metric.semantic_model_id),
+                    "metric_id": str(metric.id),
+                },
+                "created_by": request.user,
             },
-            created_by=request.user,
         )
         metric.data_asset = asset
         metric.save(update_fields=["data_asset", "updated_at"])
+        return metric
+
+    def update(self, instance, validated_data):
+        metric = super().update(instance, validated_data)
+        request = self.context["request"]
+        asset = metric.data_asset
+        if asset is None:
+            asset, _ = DataAsset.objects.update_or_create(
+                workspace=metric.workspace,
+                name=metric.name,
+                asset_type=DataAsset.AssetType.METRIC,
+                defaults={
+                    "data_source": metric.semantic_model.base_table.data_source,
+                    "status": DataAsset.Status.ACTIVE,
+                    "metadata": {
+                        "semantic_model_id": str(metric.semantic_model_id),
+                        "metric_id": str(metric.id),
+                    },
+                    "created_by": request.user,
+                },
+            )
+            metric.data_asset = asset
+            metric.save(update_fields=["data_asset", "updated_at"])
+        else:
+            asset.name = metric.name
+            asset.data_source = metric.semantic_model.base_table.data_source
+            asset.status = DataAsset.Status.ACTIVE
+            asset.metadata = {
+                **(asset.metadata or {}),
+                "semantic_model_id": str(metric.semantic_model_id),
+                "metric_id": str(metric.id),
+            }
+            asset.save(update_fields=["name", "data_source", "status", "metadata", "updated_at"])
         return metric
 
 

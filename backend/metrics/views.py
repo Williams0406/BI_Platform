@@ -66,6 +66,11 @@ class MetricDefinitionViewSet(WorkspaceScopedQuerysetMixin, viewsets.ModelViewSe
     serializer_class = MetricDefinitionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def destroy(self, request, *args, **kwargs):
+        from common.code_deletion import delete_code_and_measures
+        metric = self.get_object()
+        return Response(delete_code_and_measures(workspace_id=metric.workspace_id, metric_id=metric.id))
+
     def get_queryset(self):
         queryset = MetricDefinition.objects.filter(
             workspace__organization__memberships__user=self.request.user,

@@ -1,6 +1,6 @@
 from celery import shared_task
 from execution.models import Execution
-from execution.services import mark_failed
+from execution.services import mark_failed, ExecutionCancelled
 from .ml_services import batch_inference, train_model
 from .models import DatasetDefinition, ModelRun, ModelVersion, PythonTransformation
 from .python_services import execute_python_transformation
@@ -25,6 +25,8 @@ def train_model_task(self, execution_id, model_run_id):
         model_run.status=ModelRun.Status.CANCELLED; model_run.save(update_fields=["status"]); return {"cancelled":True}
     execution.celery_task_id=self.request.id or ""; execution.save(update_fields=["celery_task_id"])
     try: return train_model(execution,model_run)
+    except ExecutionCancelled:
+        model_run.status=ModelRun.Status.CANCELLED; model_run.finished_at=__import__("django.utils.timezone",fromlist=["now"]).now(); model_run.save(update_fields=["status","finished_at"]); return {"cancelled":True}
     except Exception as exc:
         model_run.status=ModelRun.Status.FAILED; model_run.error_message=str(exc); model_run.save(update_fields=["status","error_message"])
         execution.refresh_from_db()
@@ -43,6 +45,8 @@ def batch_inference_task(self, execution_id, model_version_id, dataset_id, reque
         from django.contrib.auth import get_user_model
         requested_by=get_user_model().objects.filter(id=requested_by_id).first()
     try: return batch_inference(execution,version,dataset,requested_by=requested_by)
+    except ExecutionCancelled:
+        return {"cancelled":True}
     except Exception as exc:
         execution.refresh_from_db()
         if execution.status!=Execution.Status.FAILED: mark_failed(execution,exc)

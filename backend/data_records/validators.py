@@ -1,12 +1,35 @@
 import datetime
 import decimal
+import math
 import uuid
 
 from .exceptions import RecordValidationError
 
 
-def coerce_value(field, value):
+def _is_null_value(value):
+    """Normalize missing values produced by CSV/Excel readers.
+
+    Pandas represents empty numeric cells as NaN (including numpy.float64(nan)),
+    which must become SQL NULL for nullable fields instead of being validated as
+    a DECIMAL/FLOAT value. Empty strings are treated as missing as well.
+    """
     if value is None:
+        return True
+
+    if isinstance(value, str):
+        return value.strip() == ""
+
+    if isinstance(value, decimal.Decimal):
+        return value.is_nan()
+
+    try:
+        return math.isnan(value)
+    except (TypeError, ValueError):
+        return False
+
+
+def coerce_value(field, value):
+    if _is_null_value(value):
         if not field.nullable:
             raise RecordValidationError(f"{field.name} no permite NULL.")
         return None
@@ -65,8 +88,14 @@ def coerce_value(field, value):
         )
 
 
-def validate_record_payload(table_asset, payload, partial=False):
-    fields = {
+def validate_record_payload(table_asset, payload, partial=False, field_map=None):
+    """Validate a record without forcing a field query for every row.
+
+    ``field_map`` can be supplied by bulk callers (imports/syncs) so the table
+    metadata is loaded once and reused for all rows. Existing callers keep the
+    original behaviour.
+    """
+    fields = field_map if field_map is not None else {
         field.name: field
         for field in table_asset.fields.all()
     }

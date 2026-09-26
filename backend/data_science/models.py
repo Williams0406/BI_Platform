@@ -63,6 +63,9 @@ class ModelDefinition(models.Model):
         RANDOM_FOREST_CLASSIFIER = "RANDOM_FOREST_CLASSIFIER", "Random Forest Classifier"
         LINEAR_REGRESSION = "LINEAR_REGRESSION", "Linear Regression"
         RANDOM_FOREST_REGRESSOR = "RANDOM_FOREST_REGRESSOR", "Random Forest Regressor"
+        XGBOOST_CLASSIFIER = "XGBOOST_CLASSIFIER", "XGBoost Classifier"
+        XGBOOST_REGRESSOR = "XGBOOST_REGRESSOR", "XGBoost Regressor"
+        PYTHON_ESTIMATOR = "PYTHON_ESTIMATOR", "Python Estimator"
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="ml_models")
     dataset = models.ForeignKey(DatasetDefinition, on_delete=models.CASCADE, related_name="models")

@@ -44,7 +44,7 @@ function relationPath(source, target, sourceHeight, targetHeight) {
   return `M ${sx} ${sy} C ${sx + delta} ${sy}, ${tx - delta} ${ty}, ${tx} ${ty}`;
 }
 
-export default function VisualDataModel({ workspaceId, tables, relations, sources, selectedId, onSelect, onRenameTable, onDeleteTable, onDeleteSource, compactRelationships = false, query = "", sourceFilter = "ALL" }) {
+export default function VisualDataModel({ workspaceId, tables, relations, sources, selectedId, onSelect, onRenameTable, onDeleteTable, onDeleteSource, compactRelationships = false, query = "", sourceFilter = "ALL", onCanvasClick }) {
   const viewportRef = useRef(null);
   const dragRef = useRef(null);
   const [positions, setPositions] = useState(() => autoLayout(tables));
@@ -151,7 +151,7 @@ export default function VisualDataModel({ workspaceId, tables, relations, source
     <section className="visualModelShell">
 
 
-      <div className="visualModelViewport" ref={viewportRef} tabIndex={0} title="Zoom: Ctrl/Cmd + mouse wheel, +, -, or 0">
+      <div className="visualModelViewport" ref={viewportRef} tabIndex={0} title="Zoom: Ctrl/Cmd + mouse wheel, +, -, or 0" onClick={(event)=>{if(event.target.closest?.(".modelNode"))return;onCanvasClick?.();}}>
         <div className="visualModelCanvas" style={{ width: canvasSize.width * zoom, height: canvasSize.height * zoom }}>
           <div className="visualModelScale" style={{ width: canvasSize.width, height: canvasSize.height, transform: `scale(${zoom})` }}>
             <svg className="modelRelationLayer" width={canvasSize.width} height={canvasSize.height} aria-hidden="true">

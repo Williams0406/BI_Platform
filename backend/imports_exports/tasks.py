@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.utils import timezone
 from execution.models import Execution
-from execution.services import create_execution, mark_failed
+from execution.services import create_execution, mark_failed, ExecutionCancelled
 
 from .models import ExportJob, ImportJob, SourceSyncPolicy
 from .services import execute_export, execute_import, execute_source_sync
@@ -15,6 +15,9 @@ def run_import_task(self, execution_id, job_id):
     execution.save(update_fields=["celery_task_id"])
     try:
         return execute_import(job, execution)
+    except ExecutionCancelled:
+        job.status = ImportJob.Status.CANCELLED if hasattr(ImportJob.Status,"CANCELLED") else ImportJob.Status.FAILED
+        job.finished_at = timezone.now(); job.save(update_fields=["status","finished_at"]); return {"cancelled":True}
     except Exception as exc:
         job.status = ImportJob.Status.FAILED
         job.finished_at = timezone.now()
@@ -32,6 +35,9 @@ def run_export_task(self, execution_id, job_id):
     execution.save(update_fields=["celery_task_id"])
     try:
         return execute_export(job, execution)
+    except ExecutionCancelled:
+        if hasattr(ExportJob.Status,"CANCELLED"): job.status=ExportJob.Status.CANCELLED; job.finished_at=timezone.now(); job.save(update_fields=["status","finished_at"])
+        return {"cancelled":True}
     except Exception as exc:
         job.status = ExportJob.Status.FAILED
         job.finished_at = timezone.now()
@@ -51,6 +57,8 @@ def run_source_sync_task(self, execution_id, policy_id):
     execution.save(update_fields=["celery_task_id"])
     try:
         return execute_source_sync(policy, execution)
+    except ExecutionCancelled:
+        policy.status = SourceSyncPolicy.Status.FAILED; policy.last_error="Cancelled by user."; policy.save(update_fields=["status","last_error","updated_at"]); return {"cancelled":True}
     except Exception as exc:
         policy.status = SourceSyncPolicy.Status.FAILED
         policy.last_error = str(exc)

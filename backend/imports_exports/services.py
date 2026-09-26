@@ -221,20 +221,21 @@ def _insert_validated_rows(table, rows, mode="APPEND", execution=None):
         else:
             conflict = f" ON CONFLICT ({quote(pk[0])}) DO NOTHING"
     sql = f"INSERT INTO {quote(table.schema_name)}.{quote(table.table_name)} ({cols}) VALUES ({placeholders}){conflict}"
-    chunk = settings.IMPORT_EXPORT_CHUNK_SIZE
+    chunk = int(getattr(settings, "IMPORT_EXPORT_CHUNK_SIZE", 5000))
     with connection.cursor() as cursor:
         for start in range(0, len(rows), chunk):
             batch = rows[start:start + chunk]
             cursor.executemany(sql, [[row.get(f) for f in fields] for row in batch])
             if execution:
-                from execution.services import update_progress
+                from execution.services import update_progress, ensure_not_cancelled
+                ensure_not_cancelled(execution)
                 update_progress(execution, 35 + int(55 * (start + len(batch)) / len(rows)))
     return len(rows)
 
 
 @transaction.atomic
 def execute_import(job, execution):
-    from execution.services import mark_running, mark_success, update_progress
+    from execution.services import mark_running, mark_success, update_progress, ensure_not_cancelled
     mark_running(execution)
     job.status = ImportJob.Status.RUNNING
     job.save(update_fields=["status"])
@@ -262,15 +263,37 @@ def execute_import(job, execution):
     if not table or table.data_source.mode != "MANAGED":
         raise ValueError("La importación solo puede escribir en una tabla MANAGED.")
 
+    # Load table metadata once. Previously validate_record_payload() executed
+    # table.fields.all() for every row, producing an N+1 query pattern that
+    # made large CSV imports appear stuck in RUNNING/QUEUED.
+    field_map = {field.name: field for field in table.fields.all()}
+
     rows = list(_read_rows(job))
     job.rows_total = len(rows)
     assert_import_rows(job.workspace, len(rows))
     valid, errors = [], []
-    for idx, row in enumerate(rows, start=2):
+    total_rows = max(len(rows), 1)
+    progress_step = max(1, len(rows) // 20)
+    for position, row in enumerate(rows, start=1):
         try:
-            valid.append(validate_record_payload(table, _mapped(row, job.column_mapping, inferred if job.mode == ImportJob.Mode.CREATE else None), partial=False))
+            valid.append(
+                validate_record_payload(
+                    table,
+                    _mapped(row, job.column_mapping, inferred if job.mode == ImportJob.Mode.CREATE else None),
+                    partial=False,
+                    field_map=field_map,
+                )
+            )
         except Exception as exc:
-            errors.append({"row": idx, "error": str(exc)})
+            # +1 because the first physical row contains the headers.
+            errors.append({"row": position + 1, "error": str(exc)})
+        if position % progress_step == 0 or position == len(rows):
+            ensure_not_cancelled(execution)
+            update_progress(
+                execution,
+                min(30, 5 + int(25 * position / total_rows)),
+                f"Validando archivo: {position:,}/{len(rows):,} filas.",
+            )
     job.rows_valid = len(valid)
     job.rows_failed = len(errors)
     job.error_report = errors[:1000]
@@ -385,7 +408,7 @@ def _ensure_sync_target(policy):
 
 
 def execute_source_sync(policy, execution):
-    from execution.services import mark_running, mark_success, update_progress
+    from execution.services import mark_running, mark_success, update_progress, ensure_not_cancelled
     mark_running(execution)
     policy.status = SourceSyncPolicy.Status.RUNNING
     policy.last_error = ""
@@ -401,11 +424,13 @@ def execute_source_sync(policy, execution):
     offset = 0
     total = 0
     newest_cursor = cursor_value
-    target_field_names = {f.name for f in target.fields.all()}
+    target_field_map = {f.name: f for f in target.fields.all()}
+    target_field_names = set(target_field_map)
     source_name_map = {f.name: clean_identifier(f.name) for f in policy.source_table.fields.all()}
     max_rows = settings.IMPORT_EXPORT_MAX_SYNC_ROWS if hasattr(settings, "IMPORT_EXPORT_MAX_SYNC_ROWS") else 2_000_000
 
     while True:
+        ensure_not_cancelled(execution)
         data = _read_sync_page(policy, offset, page_size, cursor_value=cursor_value)
         rows = data.get("rows") or []
         if not rows:
@@ -414,7 +439,7 @@ def execute_source_sync(policy, execution):
         for row in rows:
             mapped = {source_name_map.get(k, clean_identifier(k)): v for k, v in row.items()}
             mapped = {k: v for k, v in mapped.items() if k in target_field_names}
-            normalized.append(validate_record_payload(target, mapped, partial=False))
+            normalized.append(validate_record_payload(target, mapped, partial=False, field_map=target_field_map))
             if policy.strategy == SourceSyncPolicy.Strategy.INCREMENTAL:
                 raw = row.get(policy.incremental_field)
                 # Incremental connector reads are ordered by cursor_field, so the
@@ -473,7 +498,7 @@ def _export_query(job):
 
 
 def execute_export(job, execution):
-    from execution.services import mark_running, mark_success, update_progress
+    from execution.services import mark_running, mark_success, update_progress, ensure_not_cancelled
     mark_running(execution)
     job.status = ExportJob.Status.RUNNING
     job.save(update_fields=["status"])
@@ -485,6 +510,7 @@ def execute_export(job, execution):
         cursor.execute(query, params)
         rows = cursor.fetchall()
     assert_export_rows(job.workspace, len(rows))
+    ensure_not_cancelled(execution)
     update_progress(execution, 50, "Datos consultados.")
     root = Path(settings.MEDIA_ROOT) / "exports" / str(job.workspace_id)
     root.mkdir(parents=True, exist_ok=True)

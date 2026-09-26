@@ -120,12 +120,16 @@ def list_records(table_asset, query_params):
 
     field_map = public_field_map(table_asset)
     visible_columns = list(field_map)
-    version_column = table_asset.row_version_column or "__row_version"
+    # Imported/managed base tables have an optimistic-lock row-version column.
+    # SQLTransformation outputs (especially VIEWs) do not. Selecting an invented
+    # __row_version made valid derived datasets look empty in /app/data because
+    # the preview request failed and the frontend intentionally collapsed it.
+    version_column = table_asset.row_version_column or ""
 
     limit = min(max(int(query_params.get("limit", 100)), 1), 1000)
     offset = max(int(query_params.get("offset", 0)), 0)
 
-    columns = visible_columns + [version_column]
+    columns = visible_columns + ([version_column] if version_column else [])
     select_sql = ", ".join(quote(column) for column in columns)
 
     clauses, params = build_filters(table_asset, query_params)

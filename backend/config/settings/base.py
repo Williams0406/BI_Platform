@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 import dj_database_url
 
@@ -270,6 +271,8 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 
 CELERY_TASK_ROUTES = {
+    "common.environment_tasks.install_environment_package": {"queue": "python"},
+    "common.environment_tasks.uninstall_environment_package": {"queue": "python"},
     "execution.tasks.execute_job": {"queue": "fast"},
     "transformations.tasks.run_sql_transformation_task": {"queue": "sql"},
     "dependencies.tasks.propagate_asset_change_task": {"queue": "fast"},
@@ -288,7 +291,11 @@ PYTHON_RUNTIME_ROOT = BASE_DIR / "runtime_artifacts"
 PYTHON_RUNTIME_TIMEOUT_SECONDS = env_int("PYTHON_RUNTIME_TIMEOUT_SECONDS", 300)
 PYTHON_RUNTIME_MAX_ROWS = env_int("PYTHON_RUNTIME_MAX_ROWS", 100000)
 PYTHON_RUNTIME_MEMORY_MB = env_int("PYTHON_RUNTIME_MEMORY_MB", 1024)
-PYTHON_RUNTIME_ALLOWED_PACKAGES = ["pandas", "numpy", "math", "statistics", "datetime", "json"]
+# Cancellation is cooperative by default. Enable hard termination only when workers
+# are isolated per task/process and your deployment can safely terminate them.
+EXECUTION_CANCEL_TERMINATE = env("EXECUTION_CANCEL_TERMINATE", "false").lower() in {"1","true","yes","on"}
+EXECUTION_CANCEL_SIGNAL = env("EXECUTION_CANCEL_SIGNAL", "SIGTERM")
+PYTHON_RUNTIME_ALLOWED_PACKAGES = ["pandas", "numpy", "sklearn", "xgboost", "matplotlib", "math", "statistics", "datetime", "json"]
 
 # ------------------------------------------------------------
 # Customer Data Gateway
@@ -331,6 +338,7 @@ ARTIFACT_S3_SECRET_ACCESS_KEY = env("ARTIFACT_S3_SECRET_ACCESS_KEY", "")
 PYTHON_RUNTIME_ROOT = ARTIFACT_LOCAL_ROOT
 
 OPS_STALE_EXECUTION_MINUTES = env_int("OPS_STALE_EXECUTION_MINUTES", 120)
+OPS_STALE_QUEUED_MINUTES = env_int("OPS_STALE_QUEUED_MINUTES", 120)
 OPS_READY_CHECK_REDIS = env("OPS_READY_CHECK_REDIS", "true").lower() in {"1","true","yes","on"}
 OPS_READY_CHECK_STORAGE = env("OPS_READY_CHECK_STORAGE", "false").lower() in {"1","true","yes","on"}
 
@@ -356,3 +364,12 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 IMPORT_EXPORT_MAX_SYNC_ROWS = env_int("IMPORT_EXPORT_MAX_SYNC_ROWS", 2000000)
+IMPORT_EXPORT_CHUNK_SIZE = env_int("IMPORT_EXPORT_CHUNK_SIZE", 5000)
+
+# Isolated user Python environments. Packages installed from the Environments UI
+# are never installed into Django's own virtualenv.
+# Isolated runtimes need a deliberately short root on Windows. Deep wheel paths
+# (for example scikit-learn test data) can otherwise exceed Windows path limits
+# and leave a package only partially installed. Override this in production.
+_DEFAULT_PYTHON_ENVIRONMENTS_ROOT = r"C:\bi_python_envs" if os.name == "nt" else str(BASE_DIR / ".python_envs")
+PYTHON_ENVIRONMENTS_ROOT = env("PYTHON_ENVIRONMENTS_ROOT", default=_DEFAULT_PYTHON_ENVIRONMENTS_ROOT)

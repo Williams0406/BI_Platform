@@ -1,10 +1,11 @@
 import api from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
-export async function listCatalogTables(dataSourceId, schema = "") {
+export async function listCatalogTables(dataSourceId, schema = "", workspaceId = "") {
   const params = {};
   if (dataSourceId) params.data_source = dataSourceId;
   if (schema) params.schema = schema;
+  if (workspaceId) params.workspace = workspaceId;
   const response = await api.get(API_ENDPOINTS.catalog.tables, { params });
   return response.data;
 }

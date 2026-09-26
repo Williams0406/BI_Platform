@@ -1,7 +1,7 @@
 from celery import shared_task
 
 from execution.models import Execution
-from execution.services import mark_failed
+from execution.services import mark_failed, ExecutionCancelled
 
 from .models import OptimizationRun
 from .services import execute_optimization
@@ -28,6 +28,11 @@ def run_optimization_task(self, execution_id, optimization_run_id):
 
     try:
         return execute_optimization(execution, run)
+    except ExecutionCancelled:
+        run.status = OptimizationRun.Status.CANCELLED
+        run.finished_at = __import__("django.utils.timezone", fromlist=["now"]).now()
+        run.save(update_fields=["status", "finished_at"])
+        return {"cancelled": True}
     except Exception as exc:
         run.status = OptimizationRun.Status.FAILED
         run.error_message = str(exc)

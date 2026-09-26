@@ -60,7 +60,10 @@ export default function OperationalViewsPage() {
     try {
       // source_table remains a backend compatibility anchor. The builder itself can bind components to any catalog table.
       const anchor = tables[0];
-      const created = await createView({ workspace: activeWorkspace.id, source_table: anchor.id, name: "Untitled view", view_type: template[0], status: "ACTIVE", config: { builder_ir: { version: 4, template: template[0], layout: "FREE", components: [], variables: [], actions: [], code: "" } }, default_filters: [], default_ordering: [] });
+      const used = new Set(views.map(item=>String(item.name||"").trim().toLowerCase()));
+      let viewName = "Untitled view"; let suffix = 2;
+      while (used.has(viewName.toLowerCase())) viewName = `Untitled view ${suffix++}`;
+      const created = await createView({ workspace: activeWorkspace.id, source_table: anchor.id, name: viewName, view_type: template[0], status: "ACTIVE", config: { builder_ir: { version: 4, template: template[0], layout: "FREE", components: [], variables: [], actions: [], code: "" } }, default_filters: [], default_ordering: [] });
       window.location.href = `/app/views/${created.id}`;
     } catch (requestError) { setError(getApiErrorMessage(requestError)); }
   }

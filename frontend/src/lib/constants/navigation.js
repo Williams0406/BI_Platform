@@ -1,6 +1,6 @@
 export const NAVIGATION_SECTIONS = [
   { id: "overview", label: "Home", icon: "home", href: "/app" },
-  { id: "data", label: "Data", icon: "database", href: "/app/data-model" },
+  { id: "data", label: "Data", icon: "database", href: "/app/data" },
   { id: "table-workspace", label: "Table", icon: "table", href: "/app/data-table" },
   { id: "dashboards", label: "Analytics", icon: "dashboard", href: "/app/analytics" },
   { id: "scripts", label: "Code", icon: "code", href: "/app/scripts" },
@@ -22,9 +22,9 @@ export const NAVIGATION_SECTIONS = [
 export function isNavigationItemActive(pathname, href) {
   if (!href) return false;
   if (href === "/app") return pathname === "/app";
-  if (href === "/app/data-model") return pathname === "/app/data-model" || pathname.startsWith("/app/data-model/") || pathname.startsWith("/app/data-assets");
+  if (href === "/app/data") return pathname === "/app/data" || pathname.startsWith("/app/data/") || pathname.startsWith("/app/data-assets");
   if (href === "/app/data-table") return pathname === "/app/data-table";
-  if (href === "/app/analytics") return ["/app/analytics","/app/dashboards","/app/reports"].some((p)=>pathname===p||pathname.startsWith(`${p}/`));
+  if (href === "/app/analytics") return ["/app/analytics","/app/reports"].some((p)=>pathname===p||pathname.startsWith(`${p}/`));
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 export function getNavigationGroupForPath(pathname) { return NAVIGATION_SECTIONS.find((section) => section.items?.some((item) => isNavigationItemActive(pathname, item.href))); }
